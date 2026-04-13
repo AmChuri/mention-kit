@@ -1,9 +1,28 @@
 {
   "name": "mention-editor",
   "version": "0.1.0",
-  "description": "",
-  "author": "",
+  "description": "Headless zero-dependency TypeScript mention editor for React, Vue 3, and vanilla JS",
+  "author": "Amay Churi",
   "license": "MIT",
+  "keywords": [
+    "mention",
+    "editor",
+    "contenteditable",
+    "react",
+    "vue",
+    "typescript",
+    "headless",
+    "at-mention",
+    "rich-text"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/amaychuri/mention-editor"
+  },
+  "homepage": "https://github.com/amaychuri/mention-editor#readme",
+  "bugs": {
+    "url": "https://github.com/amaychuri/mention-editor/issues"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
