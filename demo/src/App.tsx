@@ -106,7 +106,7 @@ export function App() {
             <div className="header-badges">
               <a
                 className="badge badge-gray"
-                href="https://github.com/amaychuri/mention-editor"
+                href="https://github.com/amchuri/mention-editor"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -222,15 +222,15 @@ export function App() {
           <p>
             MIT License &nbsp;·&nbsp;{' '}
             <a
-              href="https://github.com/amaychuri/mention-editor"
+              href="https://github.com/amchuri/mention-editor"
               target="_blank"
               rel="noreferrer"
             >
-              github.com/amaychuri/mention-editor
+              github.com/amchuri/mention-editor
             </a>
             &nbsp;·&nbsp; by{' '}
             <a
-              href="https://github.com/amaychuri"
+              href="https://github.com/amchuri"
               target="_blank"
               rel="noreferrer"
             >

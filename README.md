@@ -438,4 +438,4 @@ Full runnable examples live in [`examples/`](./examples):
 
 ## License
 
-MIT © [Amay Churi](https://github.com/amaychuri)
+MIT © [Amay Churi](https://github.com/amchuri)

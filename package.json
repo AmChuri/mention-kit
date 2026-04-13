@@ -17,11 +17,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/amaychuri/mention-editor"
+    "url": "https://github.com/amchuri/mention-editor"
   },
-  "homepage": "https://github.com/amaychuri/mention-editor#readme",
+  "homepage": "https://github.com/amchuri/mention-editor#readme",
   "bugs": {
-    "url": "https://github.com/amaychuri/mention-editor/issues"
+    "url": "https://github.com/amchuri/mention-editor/issues"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
