@@ -1,0 +1,16 @@
+export {
+  createMentionEditor,
+  serializeToText,
+  serializeToMarkdown,
+  renderCommentMessage,
+  renderCommentMessageToHTML,
+  DEFAULT_MENTION_PALETTE,
+} from './mention-editor';
+export type {
+  MentionEditorOptions,
+  MentionEditorInstance,
+  MentionUser,
+  EditorNode,
+  TextNode,
+  MentionNode,
+} from './mention-editor';

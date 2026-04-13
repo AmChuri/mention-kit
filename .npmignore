@@ -1,0 +1,9 @@
+src/
+examples/
+*.test.ts
+*.spec.ts
+tsconfig.json
+tsup.config.ts
+.gitignore
+coverage/
+node_modules/
