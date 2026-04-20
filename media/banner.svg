@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 320" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="900" y2="320" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f5f3ff"/>
+      <stop offset="100%" stop-color="#ede9fe"/>
+    </linearGradient>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#7c3aed" flood-opacity="0.10"/>
+    </filter>
+    <filter id="shadow-sm" x="-2%" y="-2%" width="104%" height="108%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="320" rx="16" fill="url(#bg)"/>
+
+  <!-- Editor card -->
+  <rect x="60" y="40" width="500" height="240" rx="12" fill="#fff" filter="url(#shadow)"/>
+  <rect x="60" y="40" width="500" height="240" rx="12" stroke="#e5e7eb" stroke-width="1"/>
+
+  <!-- Editor header bar -->
+  <rect x="60" y="40" width="500" height="36" rx="12" fill="#f9fafb"/>
+  <rect x="60" y="64" width="500" height="12" fill="#f9fafb"/>
+  <line x1="60" y1="76" x2="560" y2="76" stroke="#e5e7eb" stroke-width="1"/>
+
+  <!-- Dots -->
+  <circle cx="82" cy="58" r="5" fill="#f87171"/>
+  <circle cx="98" cy="58" r="5" fill="#fbbf24"/>
+  <circle cx="114" cy="58" r="5" fill="#34d399"/>
+
+  <!-- Line 1: text + mention chip -->
+  <text x="82" y="108" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="15" fill="#374151">Hey </text>
+  <!-- Chip: Alice -->
+  <rect x="113" y="92" width="130" height="24" rx="6" fill="#7c3aed18"/>
+  <circle cx="128" cy="104" r="8" fill="#7c3aed"/>
+  <text x="125" y="108" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="8" fill="#fff" font-weight="700" text-anchor="middle">AJ</text>
+  <text x="141" y="108" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="13" fill="#7c3aed" font-weight="600">Alice Johnson</text>
+  <text x="249" y="108" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="15" fill="#374151">, can you review</text>
+
+  <!-- Line 2: text + mention chip -->
+  <text x="82" y="140" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="15" fill="#374151">this PR with </text>
+  <!-- Chip: Bob -->
+  <rect x="195" y="124" width="108" height="24" rx="6" fill="#0891b218"/>
+  <circle cx="210" cy="136" r="8" fill="#0891b2"/>
+  <text x="207" y="140" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="8" fill="#fff" font-weight="700" text-anchor="middle">BS</text>
+  <text x="223" y="140" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="13" fill="#0891b2" font-weight="600">Bob Smith</text>
+  <text x="309" y="140" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="15" fill="#374151"> before merging?</text>
+
+  <!-- Cursor blink -->
+  <rect x="433" y="127" width="2" height="18" rx="1" fill="#1976d2" opacity="0.8"/>
+
+  <!-- Placeholder hint -->
+  <text x="82" y="180" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="11" fill="#94a3b8">Press @ to mention someone</text>
+
+  <!-- Dropdown card -->
+  <rect x="600" y="56" width="250" height="210" rx="10" fill="#fff" filter="url(#shadow-sm)"/>
+  <rect x="600" y="56" width="250" height="210" rx="10" stroke="#e2e8f0" stroke-width="1"/>
+
+  <!-- Dropdown header -->
+  <text x="618" y="80" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="10" fill="#94a3b8" font-weight="600" letter-spacing="0.5">MENTION SOMEONE</text>
+
+  <!-- Dropdown item 1 (selected) -->
+  <rect x="606" y="88" width="238" height="48" rx="6" fill="#7c3aed14"/>
+  <circle cx="626" cy="112" r="14" fill="#7c3aed"/>
+  <text x="623" cy="112" y="116" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="10" fill="#fff" font-weight="700" text-anchor="middle">AJ</text>
+  <text x="648" y="108" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="13" fill="#1e293b" font-weight="500">Alice Johnson</text>
+  <text x="648" y="122" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="10" fill="#94a3b8">Engineering</text>
+
+  <!-- Dropdown item 2 -->
+  <circle cx="626" cy="158" r="14" fill="#0891b2"/>
+  <text x="623" y="162" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="10" fill="#fff" font-weight="700" text-anchor="middle">BS</text>
+  <text x="648" y="154" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="13" fill="#1e293b" font-weight="500">Bob Smith</text>
+  <text x="648" y="168" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="10" fill="#94a3b8">Design</text>
+
+  <!-- Dropdown item 3 -->
+  <circle cx="626" cy="204" r="14" fill="#059669"/>
+  <text x="623" y="208" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="10" fill="#fff" font-weight="700" text-anchor="middle">CW</text>
+  <text x="648" y="200" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="13" fill="#1e293b" font-weight="500">Carol White</text>
+  <text x="648" y="214" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="10" fill="#94a3b8">Product</text>
+
+  <!-- Arrow hint -->
+  <text x="822" y="116" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="10" fill="#94a3b8">&#8629;</text>
+
+  <!-- Bottom tagline -->
+  <text x="450" y="308" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="12" fill="#7c3aed" text-anchor="middle" font-weight="500">@cursortag/mention-kit  ·  React  ·  Vue 3  ·  Vanilla JS</text>
+</svg>

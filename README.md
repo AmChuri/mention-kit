@@ -1,7 +1,26 @@
 # mention-kit
 
-A headless, zero-dependency TypeScript mention editor built on a plain `contentEditable` div.  
-Works with React, Vue 3, or vanilla JS — bring your own styles.
+<p align="center">
+  <img src="media/banner.svg" alt="mention-kit — headless mention editor" width="100%" />
+</p>
+
+<p align="center">
+  <strong>Headless, zero-dependency TypeScript mention editor</strong><br/>
+  Built on <code>contentEditable</code> — works with React, Vue 3, or vanilla JS.
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@cursortag/mention-kit"><img src="https://img.shields.io/npm/v/@cursortag/mention-kit?color=7c3aed&label=npm" alt="npm version" /></a>
+  <a href="https://github.com/amchuri/mention-kit/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/@cursortag/mention-kit?color=059669" alt="license" /></a>
+  <a href="https://www.npmjs.com/package/@cursortag/mention-kit"><img src="https://img.shields.io/npm/dt/@cursortag/mention-kit?color=0891b2" alt="downloads" /></a>
+  <a href="https://amchuri.github.io/mention-kit/"><img src="https://img.shields.io/badge/demo-live-d97706" alt="demo" /></a>
+</p>
+
+<!-- To add a demo GIF: record a ~15s screen capture of the editor, save as media/demo.gif, then uncomment:
+<p align="center">
+  <img src="media/demo.gif" alt="mention-kit demo" width="600" />
+</p>
+-->
 
 ---
 

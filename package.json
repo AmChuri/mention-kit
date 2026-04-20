@@ -46,6 +46,7 @@
   "sideEffects": false,
   "files": [
     "dist",
+    "media",
     "LICENSE",
     "README.md",
     "CHANGELOG.md"
