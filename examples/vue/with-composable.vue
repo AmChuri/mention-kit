@@ -16,7 +16,7 @@ import {
   serializeToText,
   type EditorNode,
   type MentionUser,
-} from 'mention-editor/vue';
+} from '@cursortag/mention-kit/vue';
 
 // ── Sample data ───────────────────────────────────────────────────────────────
 
@@ -73,7 +73,7 @@ function loadDraft() {
 
 <template>
   <div class="example">
-    <h2>mention-editor · Vue composable</h2>
+    <h2>@cursortag/mention-kit · Vue composable</h2>
 
     <!-- Custom shell — you own 100% of the markup and styling -->
     <div class="shell">

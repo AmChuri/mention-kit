@@ -7,7 +7,7 @@
  *  - Styling the chip/dropdown to feel native to MUI's theme
  *  - Submit button wired to the editor instance
  *
- * Dependencies (add to your project — NOT part of mention-editor):
+ * Dependencies (add to your project — NOT part of @cursortag/mention-kit):
  *   yarn add @mui/material @emotion/react @emotion/styled
  */
 
@@ -22,7 +22,7 @@ import {
   useMentionEditor,
   serializeToText,
   type MentionUser,
-} from 'mention-editor/react';
+} from '@cursortag/mention-kit/react';
 
 const USERS: MentionUser[] = [
   { id: 'u1', name: 'Alice Johnson', meta: 'Engineering' },

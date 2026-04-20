@@ -1,5 +1,5 @@
 {
-  "name": "mention-editor",
+  "name": "@cursortag/mention-kit",
   "version": "0.1.0",
   "description": "Headless zero-dependency TypeScript mention editor for React, Vue 3, and vanilla JS",
   "author": "Amay Churi",
@@ -17,11 +17,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/amchuri/mention-editor"
+    "url": "https://github.com/amchuri/mention-kit"
   },
-  "homepage": "https://github.com/amchuri/mention-editor#readme",
+  "homepage": "https://github.com/amchuri/mention-kit#readme",
   "bugs": {
-    "url": "https://github.com/amchuri/mention-editor/issues"
+    "url": "https://github.com/amchuri/mention-kit/issues"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

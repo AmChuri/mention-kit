@@ -4,7 +4,7 @@ import {
   MentionInput,
   serializeToText,
   type MentionEditorInstance,
-} from 'mention-editor/react';
+} from '@cursortag/mention-kit/react';
 
 const users = [
   { id: 'u1', name: 'Alice Johnson', meta: 'Engineering' },
@@ -29,7 +29,7 @@ function CommentBox() {
 }`;
 
 export const REACT_HOOK_SNIPPET = `\
-import { useMentionEditor } from 'mention-editor/react';
+import { useMentionEditor } from '@cursortag/mention-kit/react';
 
 function CommentBox() {
   const editor = useMentionEditor({
@@ -59,7 +59,7 @@ import { ref } from 'vue';
 import {
   MentionInput,
   type MentionEditorInstance,
-} from 'mention-editor/vue';
+} from '@cursortag/mention-kit/vue';
 
 const editorRef = ref<MentionEditorInstance | null>(null);
 const users = [
@@ -82,7 +82,7 @@ const users = [
 export const VUE_COMPOSABLE_SNIPPET = `\
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useMentionEditor } from 'mention-editor/vue';
+import { useMentionEditor } from '@cursortag/mention-kit/vue';
 
 // Reactive getter — editor always reads the latest list
 const editor = useMentionEditor({

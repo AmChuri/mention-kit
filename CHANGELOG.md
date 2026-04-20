@@ -14,10 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `serializeToText()` / `serializeToMarkdown()` — serialisation helpers
 - `renderCommentMessage()` / `renderCommentMessageToHTML()` — re-render stored mentions
 - `DEFAULT_MENTION_PALETTE` — customisable color palette
-- **React bindings** (`mention-editor/react`)
+- **React bindings** (`@cursortag/mention-kit/react`)
   - `<MentionInput />` drop-in component
   - `useMentionEditor()` hook for custom containers (MUI, shadcn, etc.)
-- **Vue 3 bindings** (`mention-editor/vue`)
+- **Vue 3 bindings** (`@cursortag/mention-kit/vue`)
   - `<MentionInput />` drop-in component with `@change` / `@submit` emits
   - `useMentionEditor()` composable with reactive getter support
 - Keyboard navigation: `@` to open, `↑↓` to navigate, `Enter`/`Tab` to select, `Escape` to close
@@ -29,4 +29,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dual CJS + ESM builds with full `.d.ts` types
 - GitHub Pages demo site with live interactive examples
 
-[0.1.0]: https://github.com/amchuri/mention-editor/releases/tag/v0.1.0
+[0.1.0]: https://github.com/amchuri/mention-kit/releases/tag/v0.1.0

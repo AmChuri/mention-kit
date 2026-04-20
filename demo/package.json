@@ -1,5 +1,5 @@
 {
-  "name": "mention-editor-demo",
+  "name": "mention-kit-demo",
   "private": true,
   "scripts": {
     "dev": "vite",

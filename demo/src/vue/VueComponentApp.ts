@@ -4,7 +4,7 @@ import {
   serializeToText,
   type EditorNode,
   type MentionEditorInstance,
-} from 'mention-editor/vue';
+} from '@cursortag/mention-kit/vue';
 import { USERS } from '../data';
 
 export const VueComponentApp = defineComponent({

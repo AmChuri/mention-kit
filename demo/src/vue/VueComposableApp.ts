@@ -3,7 +3,7 @@ import {
   useMentionEditor,
   serializeToText,
   type EditorNode,
-} from 'mention-editor/vue';
+} from '@cursortag/mention-kit/vue';
 import { USERS } from '../data';
 
 type Team = 'all' | 'eng' | 'design' | 'product';

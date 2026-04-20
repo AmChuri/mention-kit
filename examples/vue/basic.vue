@@ -17,7 +17,7 @@ import {
   type EditorNode,
   type MentionEditorInstance,
   type MentionUser,
-} from 'mention-editor/vue';
+} from '@cursortag/mention-kit/vue';
 
 // ── Sample data ───────────────────────────────────────────────────────────────
 
@@ -48,7 +48,7 @@ function onChange(nodes: EditorNode[]) {
 
 <template>
   <div class="example">
-    <h2>mention-editor · Vue basic</h2>
+    <h2>@cursortag/mention-kit · Vue basic</h2>
 
     <!--
       MentionInput renders a plain <div>.

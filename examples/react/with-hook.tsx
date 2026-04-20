@@ -16,7 +16,7 @@ import {
   serializeToText,
   type EditorNode,
   type MentionUser,
-} from 'mention-editor/react';
+} from '@cursortag/mention-kit/react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -58,7 +58,7 @@ export function HookExample() {
     <div
       style={{ maxWidth: 600, margin: '2rem auto', fontFamily: 'sans-serif' }}
     >
-      <h2>mention-editor · React hook</h2>
+      <h2>@cursortag/mention-kit · React hook</h2>
 
       {/* Custom container — style anything around the ref'd element */}
       <div

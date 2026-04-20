@@ -4,7 +4,7 @@ import {
   serializeToText,
   type EditorNode,
   type MentionEditorInstance,
-} from 'mention-editor/react';
+} from '@cursortag/mention-kit/react';
 import { USERS } from '../data';
 
 export function ReactComponentDemo() {

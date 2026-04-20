@@ -11,11 +11,11 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      'mention-editor/react': resolve(__dirname, '../src/react.tsx'),
-      'mention-editor/vue': resolve(__dirname, '../src/vue.ts'),
-      'mention-editor': resolve(__dirname, '../src/index.ts'),
+      '@cursortag/mention-kit/react': resolve(__dirname, '../src/react.tsx'),
+      '@cursortag/mention-kit/vue': resolve(__dirname, '../src/vue.ts'),
+      '@cursortag/mention-kit': resolve(__dirname, '../src/index.ts'),
     },
   },
   // Set the base to the repo name for GitHub Pages subpath hosting
-  base: '/mention-editor/',
+  base: '/mention-kit/',
 });

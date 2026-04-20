@@ -1,12 +1,12 @@
 /**
  * @file react.tsx
- * @description React bindings for mention-editor.
+ * @description React bindings for @cursortag/mention-kit.
  *
  * Two integration paths:
  *
  * ## 1. Drop-in component (quick start)
  * ```tsx
- * import { MentionInput } from 'mention-editor/react';
+ * import { MentionInput } from '@cursortag/mention-kit/react';
  *
  * <MentionInput
  *   users={users}
@@ -18,7 +18,7 @@
  *
  * ## 2. Hook (BYO container — full control)
  * ```tsx
- * import { useMentionEditor } from 'mention-editor/react';
+ * import { useMentionEditor } from '@cursortag/mention-kit/react';
  *
  * function MyEditor() {
  *   const editor = useMentionEditor({ users, onSubmit: save });

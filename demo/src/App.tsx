@@ -96,7 +96,7 @@ export function App() {
           <div className="header-top">
             <div>
               <h1 className="logo">
-                <span className="logo-at">@</span>mention-editor
+                <span className="logo-at">@</span>mention-kit
               </h1>
               <p className="tagline">
                 Headless zero-dependency TypeScript mention editor for React,
@@ -106,7 +106,7 @@ export function App() {
             <div className="header-badges">
               <a
                 className="badge badge-gray"
-                href="https://github.com/amchuri/mention-editor"
+                href="https://github.com/amchuri/mention-kit"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -114,7 +114,7 @@ export function App() {
               </a>
               <a
                 className="badge badge-gray"
-                href="https://www.npmjs.com/package/mention-editor"
+                href="https://www.npmjs.com/package/@cursortag/mention-kit"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -124,7 +124,7 @@ export function App() {
           </div>
 
           <div className="install-block">
-            <code>npm install mention-editor</code>
+            <code>npm install @cursortag/mention-kit</code>
           </div>
 
           <div className="feature-grid">
@@ -222,11 +222,11 @@ export function App() {
           <p>
             MIT License &nbsp;·&nbsp;{' '}
             <a
-              href="https://github.com/amchuri/mention-editor"
+              href="https://github.com/amchuri/mention-kit"
               target="_blank"
               rel="noreferrer"
             >
-              github.com/amchuri/mention-editor
+              github.com/amchuri/mention-kit
             </a>
             &nbsp;·&nbsp; by{' '}
             <a

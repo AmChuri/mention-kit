@@ -1,13 +1,13 @@
 /**
  * @file vue.ts
- * @description Vue 3 bindings for mention-editor.
+ * @description Vue 3 bindings for @cursortag/mention-kit.
  *
  * Two integration paths:
  *
  * ## 1. Drop-in component (quick start)
  * ```vue
  * <script setup lang="ts">
- * import { MentionInput } from 'mention-editor/vue';
+ * import { MentionInput } from '@cursortag/mention-kit/vue';
  * </script>
  *
  * <template>
@@ -18,7 +18,7 @@
  * ## 2. Composable (BYO container — full control)
  * ```vue
  * <script setup lang="ts">
- * import { useMentionEditor } from 'mention-editor/vue';
+ * import { useMentionEditor } from '@cursortag/mention-kit/vue';
  *
  * const editor = useMentionEditor({
  *   get users() { return userList.value; }, // reactive getter

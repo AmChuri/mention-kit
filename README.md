@@ -1,4 +1,4 @@
-# mention-editor
+# mention-kit
 
 A headless, zero-dependency TypeScript mention editor built on a plain `contentEditable` div.  
 Works with React, Vue 3, or vanilla JS — bring your own styles.
@@ -22,23 +22,23 @@ Works with React, Vue 3, or vanilla JS — bring your own styles.
 
 ```bash
 # npm
-npm install mention-editor
+npm install @cursortag/mention-kit
 
 # yarn
-yarn add mention-editor
+yarn add @cursortag/mention-kit
 
 # pnpm
-pnpm add mention-editor
+pnpm add @cursortag/mention-kit
 ```
 
 React and Vue are optional peer dependencies — install only what you use:
 
 ```bash
 # React
-yarn add mention-editor react
+yarn add @cursortag/mention-kit react
 
 # Vue
-yarn add mention-editor vue
+yarn add @cursortag/mention-kit vue
 ```
 
 ---
@@ -48,7 +48,7 @@ yarn add mention-editor vue
 ### React
 
 ```tsx
-import { MentionInput } from 'mention-editor/react';
+import { MentionInput } from '@cursortag/mention-kit/react';
 
 const users = [
   { id: 'u1', name: 'Alice Johnson', meta: 'Engineering' },
@@ -71,7 +71,7 @@ function CommentBox() {
 
 ```vue
 <script setup lang="ts">
-import { MentionInput } from 'mention-editor/vue';
+import { MentionInput } from '@cursortag/mention-kit/vue';
 
 const users = [
   { id: 'u1', name: 'Alice Johnson', meta: 'Engineering' },
@@ -92,7 +92,7 @@ const users = [
 ### Vanilla JS
 
 ```ts
-import { createMentionEditor } from 'mention-editor';
+import { createMentionEditor } from '@cursortag/mention-kit';
 
 const editor = createMentionEditor({
   container: document.getElementById('editor')!,
@@ -120,7 +120,7 @@ import {
   MentionInput,
   serializeToText,
   type MentionEditorInstance,
-} from 'mention-editor/react';
+} from '@cursortag/mention-kit/react';
 
 function CommentBox() {
   const ref = useRef<MentionEditorInstance>(null);
@@ -177,7 +177,10 @@ function CommentBox() {
 Use this when you need to embed the editor inside a MUI `<Box>`, shadcn `<Textarea>`, or any element you control.
 
 ```tsx
-import { useMentionEditor, serializeToText } from 'mention-editor/react';
+import {
+  useMentionEditor,
+  serializeToText,
+} from '@cursortag/mention-kit/react';
 
 function MyEditor() {
   const editor = useMentionEditor({
@@ -247,7 +250,10 @@ function MyEditor() {
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue';
-import { MentionInput, type MentionEditorInstance } from 'mention-editor/vue';
+import {
+  MentionInput,
+  type MentionEditorInstance,
+} from '@cursortag/mention-kit/vue';
 
 const editorRef = ref<MentionEditorInstance | null>(null);
 </script>
@@ -294,7 +300,7 @@ Same as the React ref methods — `getNodes`, `setNodes`, `clear`, `focus`, `set
 ```vue
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useMentionEditor } from 'mention-editor/vue';
+import { useMentionEditor } from '@cursortag/mention-kit/vue';
 
 // Reactive users — pass a getter so the editor always reads the latest list
 const editor = useMentionEditor({
@@ -333,18 +339,18 @@ const editor = useMentionEditor({
 Mentions are stored as `@{userId}` tokens. Save the serialised string and re-render it later:
 
 ```ts
-import { serializeToText, serializeToMarkdown } from 'mention-editor';
+import { serializeToText, serializeToMarkdown } from '@cursortag/mention-kit';
 
 // Store
 const stored = serializeToMarkdown(nodes);
 // "Great work @[Alice Johnson](u1), please check with @[Bob Smith](u2)."
 
 // Re-render in React (returns (string | HTMLElement)[])
-import { renderCommentMessage } from 'mention-editor/react';
+import { renderCommentMessage } from '@cursortag/mention-kit/react';
 const parts = renderCommentMessage(stored, users);
 
 // Re-render to HTML string (for emails, SSR, etc.)
-import { renderCommentMessageToHTML } from 'mention-editor';
+import { renderCommentMessageToHTML } from '@cursortag/mention-kit';
 const html = renderCommentMessageToHTML(stored, users);
 ```
 
@@ -367,7 +373,7 @@ const html = renderCommentMessageToHTML(stored, users);
 ## Custom palette
 
 ```ts
-import { DEFAULT_MENTION_PALETTE } from 'mention-editor';
+import { DEFAULT_MENTION_PALETTE } from '@cursortag/mention-kit';
 
 // Custom palette
 createMentionEditor({ ..., palette: ['#e11d48', '#0ea5e9', '#16a34a'] });
@@ -383,7 +389,7 @@ const users = [{ id: 'u1', name: 'Alice', color: '#7c3aed' }];
 
 ## API reference
 
-### Core (`mention-editor`)
+### Core (`@cursortag/mention-kit`)
 
 | Export                                             | Description                                 |
 | -------------------------------------------------- | ------------------------------------------- |

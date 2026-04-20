@@ -1,4 +1,4 @@
-import type { MentionUser } from 'mention-editor';
+import type { MentionUser } from '@cursortag/mention-kit';
 
 export const USERS: MentionUser[] = [
   { id: 'u1', name: 'Alice Johnson', meta: 'Engineering', color: '#7c3aed' },

@@ -16,7 +16,7 @@ import {
   type EditorNode,
   type MentionEditorInstance,
   type MentionUser,
-} from 'mention-editor/react';
+} from '@cursortag/mention-kit/react';
 
 // ── Sample data ───────────────────────────────────────────────────────────────
 
@@ -41,7 +41,7 @@ export function BasicExample() {
     <div
       style={{ maxWidth: 600, margin: '2rem auto', fontFamily: 'sans-serif' }}
     >
-      <h2>mention-editor · React basic</h2>
+      <h2>@cursortag/mention-kit · React basic</h2>
 
       {/* The editor — style the wrapper div however you like */}
       <MentionInput

@@ -13,9 +13,9 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "paths": {
-      "mention-editor": ["../src/index.ts"],
-      "mention-editor/react": ["../src/react.tsx"],
-      "mention-editor/vue": ["../src/vue.ts"]
+      "@cursortag/mention-kit": ["../src/index.ts"],
+      "@cursortag/mention-kit/react": ["../src/react.tsx"],
+      "@cursortag/mention-kit/vue": ["../src/vue.ts"]
     }
   },
   "include": ["src", "../src"]

@@ -1,13 +1,13 @@
 # Contributing
 
-Thanks for considering a contribution to **mention-editor**! Here's how to get started.
+Thanks for considering a contribution to **@cursortag/mention-kit**! Here's how to get started.
 
 ## Development setup
 
 ```bash
 # Clone the repo
-git clone https://github.com/amchuri/mention-editor.git
-cd mention-editor
+git clone https://github.com/amchuri/mention-kit.git
+cd mention-kit
 
 # Install dependencies
 yarn install
@@ -30,7 +30,7 @@ yarn format
 ```
 src/
   index.ts              # Public API barrel (vanilla JS)
-  mention-editor.ts     # Core editor logic (headless, zero-dep)
+  mention-editor.ts # Core editor logic (headless, zero-dep)
   react.tsx             # React bindings (component + hook)
   vue.ts                # Vue 3 bindings (component + composable)
   _build-opts.ts        # Shared helper for framework bindings
@@ -66,11 +66,11 @@ yarn install
 yarn dev
 ```
 
-Open `http://localhost:5173/mention-editor/` in your browser.
+Open `http://localhost:5173/mention-kit/` in your browser.
 
 ## Reporting bugs
 
-Open an issue at [github.com/amchuri/mention-editor/issues](https://github.com/amchuri/mention-editor/issues) with:
+Open an issue at [github.com/amchuri/mention-kit/issues](https://github.com/amchuri/mention-kit/issues) with:
 
 - What you expected vs. what happened
 - Steps to reproduce

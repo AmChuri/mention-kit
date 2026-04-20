@@ -3,7 +3,7 @@ import {
   useMentionEditor,
   serializeToText,
   type EditorNode,
-} from 'mention-editor/react';
+} from '@cursortag/mention-kit/react';
 import { USERS } from '../data';
 
 export function ReactHookDemo() {
