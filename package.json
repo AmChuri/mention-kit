@@ -1,6 +1,6 @@
 {
   "name": "@cursortag/mention-kit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Headless zero-dependency TypeScript mention editor for React, Vue 3, and vanilla JS",
   "author": "Amay Churi",
   "license": "MIT",

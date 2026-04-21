@@ -1,9 +1,5 @@
 import { useState } from 'react';
-import {
-  useMentionEditor,
-  serializeToText,
-  type EditorNode,
-} from '@cursortag/mention-kit/react';
+import { useMentionEditor } from '@cursortag/mention-kit/react';
 import { USERS } from '../data';
 
 export function ReactHookDemo() {
@@ -11,8 +7,8 @@ export function ReactHookDemo() {
 
   const editor = useMentionEditor({
     users: USERS,
-    onSubmit: (nodes: EditorNode[]) => {
-      setOutput(serializeToText(nodes));
+    onSubmit: (text) => {
+      setOutput(text);
       editor.clear();
     },
     placeholder: 'Write a comment… (type @ to mention)',

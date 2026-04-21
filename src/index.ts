@@ -11,6 +11,7 @@ export type {
   MentionEditorInstance,
   MentionUser,
   EditorNode,
+  EditorCallbackMeta,
   TextNode,
   MentionNode,
 } from './mention-editor';

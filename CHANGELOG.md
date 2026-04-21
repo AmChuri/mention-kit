@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-04-21
+
+### Changed
+
+- **Breaking:** `onChange` and `onSubmit` callback signature changed from `(data: EditorCallbackData) => void` to `(text: string, meta: EditorCallbackMeta) => void`. Text is now the primary first argument; `nodes` and `mentionedUsers` are in the second `meta` argument for power users.
+- Renamed `EditorCallbackData` to `EditorCallbackMeta` (no longer contains `text`).
+- Vue emits updated: `@change="(text, meta) => ..."` and `@submit="(text, meta) => ..."`.
+
 ## [0.1.0] - 2026-04-20
 
 ### Added
@@ -29,4 +37,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dual CJS + ESM builds with full `.d.ts` types
 - GitHub Pages demo site with live interactive examples
 
+[0.1.1]: https://github.com/amchuri/mention-kit/releases/tag/v0.1.1
 [0.1.0]: https://github.com/amchuri/mention-kit/releases/tag/v0.1.0

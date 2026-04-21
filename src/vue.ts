@@ -46,6 +46,7 @@ import {
 
 import {
   createMentionEditor,
+  type EditorCallbackMeta,
   type EditorNode,
   type MentionEditorInstance,
   type MentionEditorOptions,
@@ -56,6 +57,7 @@ import { buildEditorOpts } from './_build-opts';
 // ─── Re-exports ───────────────────────────────────────────────────────────────
 
 export type {
+  EditorCallbackMeta,
   EditorNode,
   MentionEditorInstance,
   MentionEditorOptions,
@@ -120,8 +122,8 @@ export function useMentionEditor(
     const editor = createMentionEditor(
       buildEditorOpts(containerRef.value, opts, {
         getUsers: () => optsRef.current.users,
-        onChange: (nodes) => optsRef.current.onChange?.(nodes),
-        onSubmit: (nodes) => optsRef.current.onSubmit?.(nodes),
+        onChange: (text, meta) => optsRef.current.onChange?.(text, meta),
+        onSubmit: (text, meta) => optsRef.current.onSubmit?.(text, meta),
       }),
     );
 
@@ -194,8 +196,8 @@ export const MentionInput = defineComponent({
   },
 
   emits: {
-    change: (_nodes: EditorNode[]) => true,
-    submit: (_nodes: EditorNode[]) => true,
+    change: (_text: string, _meta: EditorCallbackMeta) => true,
+    submit: (_text: string, _meta: EditorCallbackMeta) => true,
   },
 
   setup(props, { emit, expose, attrs }) {
@@ -212,8 +214,8 @@ export const MentionInput = defineComponent({
         get users() {
           return props.users;
         },
-        onChange: (nodes) => emit('change', nodes),
-        onSubmit: (nodes) => emit('submit', nodes),
+        onChange: (text, meta) => emit('change', text, meta),
+        onSubmit: (text, meta) => emit('submit', text, meta),
       };
       if (props.placeholder !== undefined)
         editorOpts.placeholder = props.placeholder;

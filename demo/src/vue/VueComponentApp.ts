@@ -1,8 +1,6 @@
 import { defineComponent, h, ref } from 'vue';
 import {
   MentionInput,
-  serializeToText,
-  type EditorNode,
   type MentionEditorInstance,
 } from '@cursortag/mention-kit/vue';
 import { USERS } from '../data';
@@ -13,8 +11,8 @@ export const VueComponentApp = defineComponent({
     const editorRef = ref<MentionEditorInstance | null>(null);
     const output = ref('');
 
-    const onSubmit = (nodes: EditorNode[]) => {
-      output.value = serializeToText(nodes);
+    const onSubmit = (text: string) => {
+      output.value = text;
       editorRef.value?.clear();
     };
 

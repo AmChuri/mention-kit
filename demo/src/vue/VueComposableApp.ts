@@ -1,9 +1,5 @@
 import { computed, defineComponent, h, ref } from 'vue';
-import {
-  useMentionEditor,
-  serializeToText,
-  type EditorNode,
-} from '@cursortag/mention-kit/vue';
+import { useMentionEditor } from '@cursortag/mention-kit/vue';
 import { USERS } from '../data';
 
 type Team = 'all' | 'eng' | 'design' | 'product';
@@ -29,8 +25,8 @@ export const VueComposableApp = defineComponent({
       get users() {
         return filteredUsers.value;
       },
-      onSubmit: (nodes: EditorNode[]) => {
-        output.value = serializeToText(nodes);
+      onSubmit: (text: string) => {
+        output.value = text;
         editor.clear();
       },
       placeholder: 'Write a comment… (type @ to mention)',

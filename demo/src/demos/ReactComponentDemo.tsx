@@ -1,8 +1,6 @@
 import { useRef, useState } from 'react';
 import {
   MentionInput,
-  serializeToText,
-  type EditorNode,
   type MentionEditorInstance,
 } from '@cursortag/mention-kit/react';
 import { USERS } from '../data';
@@ -17,8 +15,8 @@ export function ReactComponentDemo() {
         ref={ref}
         users={USERS}
         placeholder="Write a comment… (type @ to mention)"
-        onSubmit={(nodes) => {
-          setOutput(serializeToText(nodes));
+        onSubmit={(text) => {
+          setOutput(text);
           ref.current?.clear();
         }}
         className="demo-editor"

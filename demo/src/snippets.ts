@@ -1,10 +1,6 @@
 export const REACT_COMPONENT_SNIPPET = `\
 import { useRef } from 'react';
-import {
-  MentionInput,
-  serializeToText,
-  type MentionEditorInstance,
-} from '@cursortag/mention-kit/react';
+import { MentionInput, type MentionEditorInstance } from '@cursortag/mention-kit/react';
 
 const users = [
   { id: 'u1', name: 'Alice Johnson', meta: 'Engineering' },
@@ -18,9 +14,10 @@ function CommentBox() {
     <MentionInput
       ref={ref}
       users={users}
-      placeholder="Write a comment… (@ to mention)"
-      onSubmit={(nodes) => {
-        console.log(serializeToText(nodes));
+      placeholder="Write a comment…"
+      onSubmit={(text, { mentionedUsers }) => {
+        console.log(text);               // "Hey @Alice Johnson, check this"
+        console.log(mentionedUsers);      // [{ id: 'u1', name: 'Alice Johnson', ... }]
         ref.current?.clear();
       }}
       className="editor"
@@ -34,10 +31,12 @@ import { useMentionEditor } from '@cursortag/mention-kit/react';
 function CommentBox() {
   const editor = useMentionEditor({
     users,
-    onSubmit: (nodes) => {
-      save(nodes);
+    onSubmit: (text) => {
+      save(text);
       editor.clear();
     },
+    // Access meta when you need it:
+    // onChange: (text, { nodes, mentionedUsers }) => { ... },
   });
 
   // Attach containerRef to any element — MUI Box, shadcn div, etc.
@@ -56,10 +55,7 @@ function CommentBox() {
 export const VUE_COMPONENT_SNIPPET = `\
 <script setup lang="ts">
 import { ref } from 'vue';
-import {
-  MentionInput,
-  type MentionEditorInstance,
-} from '@cursortag/mention-kit/vue';
+import { MentionInput, type MentionEditorInstance } from '@cursortag/mention-kit/vue';
 
 const editorRef = ref<MentionEditorInstance | null>(null);
 const users = [
@@ -74,8 +70,11 @@ const users = [
     :users="users"
     placeholder="Write a comment…"
     class="editor"
-    @submit="(nodes) => { save(nodes); editorRef?.clear(); }"
-    @change="(nodes) => console.log(nodes)"
+    @submit="(text, { mentionedUsers }) => {
+      save(text);
+      editorRef?.clear();
+    }"
+    @change="(text) => console.log(text)"
   />
 </template>`;
 
@@ -87,10 +86,12 @@ import { useMentionEditor } from '@cursortag/mention-kit/vue';
 // Reactive getter — editor always reads the latest list
 const editor = useMentionEditor({
   get users() { return filteredUsers.value; },
-  onSubmit: (nodes) => {
-    save(nodes);
+  onSubmit: (text) => {
+    save(text);
     editor.clear();
   },
+  // Full meta available when needed:
+  // onChange: (text, { nodes, mentionedUsers }) => { ... },
 });
 </script>
 

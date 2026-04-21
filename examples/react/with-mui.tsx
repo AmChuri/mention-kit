@@ -38,8 +38,8 @@ export function MuiExample() {
   const editor = useMentionEditor({
     users: USERS,
     placeholder: 'Write a comment…',
-    onSubmit: (nodes) => {
-      console.log('submitted:', serializeToText(nodes));
+    onSubmit: (text) => {
+      console.log('submitted:', text);
       editor.clear();
     },
   });

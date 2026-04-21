@@ -13,7 +13,7 @@ import { ref } from 'vue';
 import {
   MentionInput,
   serializeToMarkdown,
-  serializeToText,
+  type EditorCallbackMeta,
   type EditorNode,
   type MentionEditorInstance,
   type MentionUser,
@@ -30,19 +30,22 @@ const users: MentionUser[] = [
 // ── State ─────────────────────────────────────────────────────────────────────
 
 const editorRef = ref<MentionEditorInstance | null>(null);
-const submitted = ref<EditorNode[]>([]);
+const submittedText = ref('');
+const submittedNodes = ref<EditorNode[]>([]);
+const mentioned = ref<MentionUser[]>([]);
 const liveText = ref('');
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
-function onSubmit(nodes: EditorNode[]) {
-  submitted.value = nodes;
-  // Clear the editor after submit using the exposed method.
+function onSubmit(text: string, { nodes, mentionedUsers }: EditorCallbackMeta) {
+  submittedText.value = text;
+  submittedNodes.value = nodes;
+  mentioned.value = mentionedUsers;
   editorRef.value?.clear();
 }
 
-function onChange(nodes: EditorNode[]) {
-  liveText.value = serializeToText(nodes);
+function onChange(text: string) {
+  liveText.value = text;
 }
 </script>
 
@@ -73,23 +76,23 @@ function onChange(nodes: EditorNode[]) {
     </p>
 
     <!-- Submitted output -->
-    <div v-if="submitted.length" class="output">
+    <div v-if="submittedText" class="output">
       <h3>Last submitted</h3>
 
       <table>
         <tr>
-          <td>plain text</td>
-          <td><code>{{ serializeToText(submitted) }}</code></td>
+          <td>text</td>
+          <td><code>{{ submittedText }}</code></td>
         </tr>
         <tr>
           <td>markdown</td>
-          <td><code>{{ serializeToMarkdown(submitted) }}</code></td>
+          <td><code>{{ serializeToMarkdown(submittedNodes) }}</code></td>
         </tr>
       </table>
 
       <details>
         <summary>raw nodes</summary>
-        <pre>{{ JSON.stringify(submitted, null, 2) }}</pre>
+        <pre>{{ JSON.stringify(submittedNodes, null, 2) }}</pre>
       </details>
     </div>
   </div>

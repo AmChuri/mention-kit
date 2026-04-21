@@ -211,9 +211,15 @@ describe('keyboard – Enter', () => {
     fireKeydown(editable, 'Enter');
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
-    const arg = onSubmit.mock.calls[0]![0] as EditorNode[];
-    expect(arg).toHaveLength(1);
-    expect(arg[0]).toMatchObject({ type: 'text', text: 'hello' });
+    const callArgs = onSubmit.mock.calls[0]!;
+    expect(callArgs[0]).toBe('hello');
+    const meta = callArgs[1] as {
+      nodes: EditorNode[];
+      mentionedUsers: unknown[];
+    };
+    expect(meta.nodes).toHaveLength(1);
+    expect(meta.nodes[0]).toMatchObject({ type: 'text', text: 'hello' });
+    expect(meta.mentionedUsers).toEqual([]);
     editor.destroy();
   });
 
@@ -509,7 +515,10 @@ describe('clear', () => {
     onChange.mockClear();
 
     editor.clear();
-    expect(onChange).toHaveBeenCalledWith([]);
+    expect(onChange).toHaveBeenCalledWith('', {
+      nodes: [],
+      mentionedUsers: [],
+    });
     editor.destroy();
   });
 });

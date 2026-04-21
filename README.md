@@ -32,6 +32,7 @@
 - **Vue 3** — `<MentionInput />` component and `useMentionEditor()` composable
 - **Headless** — renders a plain `<div>`, style with Tailwind / MUI / shadcn / anything
 - **Keyboard-first** — `@` to open, `↑↓` to navigate, `Enter`/`Tab` to select, `Escape` to close
+- **Simple callbacks** — `onSubmit` gives you `text` directly, plus `nodes` and `mentionedUsers` in `meta`
 - **Custom palettes** — per-user colors or a shared palette
 - **Persistence format** — `@{userId}` tokens for easy storage and re-render
 
@@ -79,7 +80,7 @@ function CommentBox() {
     <MentionInput
       users={users}
       placeholder="Write a comment… (@ to mention)"
-      onSubmit={(nodes) => console.log(nodes)}
+      onSubmit={(text) => console.log(text)}
       className="rounded border p-2 min-h-[80px]"
     />
   );
@@ -103,7 +104,7 @@ const users = [
     :users="users"
     placeholder="Write a comment…"
     class="rounded border p-2 min-h-[80px]"
-    @submit="(nodes) => console.log(nodes)"
+    @submit="(text) => console.log(text)"
   />
 </template>
 ```
@@ -120,11 +121,47 @@ const editor = createMentionEditor({
     { id: 'u2', name: 'Bob Smith' },
   ],
   placeholder: 'Write a comment…',
-  onSubmit: (nodes) => console.log(nodes),
+  onSubmit: (text, { mentionedUsers }) => {
+    console.log(text); // "Hey @Alice Johnson, check this"
+    console.log(mentionedUsers); // [{ id: 'u1', name: 'Alice Johnson', ... }]
+  },
 });
 
 // Cleanup
 editor.destroy();
+```
+
+---
+
+## Callback signature
+
+All callbacks receive `text` as the first argument and an optional `meta` object as the second:
+
+```ts
+onChange?: (text: string, meta: EditorCallbackMeta) => void;
+onSubmit?: (text: string, meta: EditorCallbackMeta) => void;
+```
+
+| Argument              | Type            | Description                                          |
+| --------------------- | --------------- | ---------------------------------------------------- |
+| `text`                | `string`        | Plain text with mentions as `@displayName`           |
+| `meta.nodes`          | `EditorNode[]`  | Full structured document (for storage/serialization) |
+| `meta.mentionedUsers` | `MentionUser[]` | De-duplicated list of mentioned users                |
+
+**Simple usage** — just use `text`:
+
+```tsx
+onSubmit={(text) => saveComment(text)}
+```
+
+**Power-user usage** — destructure `meta` when needed:
+
+```tsx
+onSubmit={(text, { nodes, mentionedUsers }) => {
+  saveComment(text);
+  notifyUsers(mentionedUsers.map(u => u.id));
+  storeNodes(nodes); // for re-rendering later
+}}
 ```
 
 ---
@@ -137,7 +174,6 @@ editor.destroy();
 import { useRef } from 'react';
 import {
   MentionInput,
-  serializeToText,
   type MentionEditorInstance,
 } from '@cursortag/mention-kit/react';
 
@@ -150,11 +186,10 @@ function CommentBox() {
         ref={ref}
         users={users}
         placeholder="Write a comment…"
-        onSubmit={(nodes) => {
-          console.log(serializeToText(nodes));
+        onSubmit={(text, { mentionedUsers }) => {
+          console.log(text, mentionedUsers);
           ref.current?.clear();
         }}
-        // Style with any approach — Tailwind, inline styles, CSS modules…
         className="rounded border border-gray-300 p-3 min-h-[80px] text-sm"
       />
       <button onClick={() => ref.current?.clear()}>Clear</button>
@@ -169,8 +204,8 @@ function CommentBox() {
 | ---------------- | --------------------------------- | --------------------------------- |
 | `users`          | `MentionUser[]`                   | List of mentionable users         |
 | `placeholder`    | `string`                          | Placeholder text                  |
-| `onSubmit`       | `(nodes: EditorNode[]) => void`   | Called on `Enter`                 |
-| `onChange`       | `(nodes: EditorNode[]) => void`   | Called on every edit              |
+| `onSubmit`       | `(text, meta) => void`            | Called on `Enter`                 |
+| `onChange`       | `(text, meta) => void`            | Called on every edit              |
 | `disabled`       | `boolean`                         | Disables editing                  |
 | `maxSuggestions` | `number`                          | Max dropdown items (default `8`)  |
 | `palette`        | `string[]`                        | Fallback colors for user chips    |
@@ -196,23 +231,19 @@ function CommentBox() {
 Use this when you need to embed the editor inside a MUI `<Box>`, shadcn `<Textarea>`, or any element you control.
 
 ```tsx
-import {
-  useMentionEditor,
-  serializeToText,
-} from '@cursortag/mention-kit/react';
+import { useMentionEditor } from '@cursortag/mention-kit/react';
 
 function MyEditor() {
   const editor = useMentionEditor({
     users,
-    onChange: (nodes) => console.log(serializeToText(nodes)),
-    onSubmit: (nodes) => {
-      save(nodes);
+    onChange: (text) => console.log(text),
+    onSubmit: (text) => {
+      save(text);
       editor.clear();
     },
   });
 
   return (
-    // Attach containerRef to any element — the library takes over its contents
     <div
       ref={editor.containerRef}
       className="rounded border border-gray-300 p-3 min-h-[80px]"
@@ -224,7 +255,6 @@ function MyEditor() {
 **MUI example**
 
 ```tsx
-// The ref works with any component that forwards a native DOM ref
 <Box
   ref={editor.containerRef}
   sx={{
@@ -283,8 +313,13 @@ const editorRef = ref<MentionEditorInstance | null>(null);
     :users="users"
     placeholder="Write a comment…"
     class="rounded border border-gray-300 p-3 min-h-[80px] text-sm"
-    @submit="onSubmit"
-    @change="onChange"
+    @submit="
+      (text) => {
+        save(text);
+        editorRef?.clear();
+      }
+    "
+    @change="(text) => console.log(text)"
   />
   <button @click="editorRef?.clear()">Clear</button>
 </template>
@@ -303,10 +338,10 @@ const editorRef = ref<MentionEditorInstance | null>(null);
 
 **Emits**
 
-| Event    | Payload        | Description         |
-| -------- | -------------- | ------------------- |
-| `change` | `EditorNode[]` | Fires on every edit |
-| `submit` | `EditorNode[]` | Fires on `Enter`    |
+| Event    | Arguments                                  | Description         |
+| -------- | ------------------------------------------ | ------------------- |
+| `change` | `(text: string, meta: EditorCallbackMeta)` | Fires on every edit |
+| `submit` | `(text: string, meta: EditorCallbackMeta)` | Fires on `Enter`    |
 
 **Exposed methods** (via template ref)
 
@@ -321,20 +356,18 @@ Same as the React ref methods — `getNodes`, `setNodes`, `clear`, `focus`, `set
 import { computed } from 'vue';
 import { useMentionEditor } from '@cursortag/mention-kit/vue';
 
-// Reactive users — pass a getter so the editor always reads the latest list
 const editor = useMentionEditor({
   get users() {
     return filteredUsers.value;
   },
-  onSubmit: (nodes) => {
-    save(nodes);
+  onSubmit: (text) => {
+    save(text);
     editor.clear();
   },
 });
 </script>
 
 <template>
-  <!-- Attach containerRef to any element -->
   <div ref="editor.containerRef" class="rounded border p-3 min-h-[80px]" />
 </template>
 ```
@@ -353,23 +386,95 @@ const editor = useMentionEditor({
 
 ---
 
+## Utility functions
+
+These are standalone exports — use them anywhere, no editor instance needed.
+
+### `serializeToText(nodes)`
+
+Converts an `EditorNode[]` to a plain text string. Mentions become `@displayName`.
+
+```ts
+import { serializeToText } from '@cursortag/mention-kit';
+
+const text = serializeToText(nodes);
+// "Hey @Alice Johnson, check this PR"
+```
+
+### `serializeToMarkdown(nodes)`
+
+Converts an `EditorNode[]` to a markdown-style string with user IDs. Best for storage — you can re-render it later.
+
+```ts
+import { serializeToMarkdown } from '@cursortag/mention-kit';
+
+const md = serializeToMarkdown(nodes);
+// "Hey @[Alice Johnson](u1), check this PR"
+```
+
+### `renderCommentMessage(message, users, palette?)`
+
+Takes a stored `@{userId}` message string and returns an array of text strings and `HTMLElement` chips. Use this to display stored messages in a non-editable context.
+
+```ts
+import { renderCommentMessage } from '@cursortag/mention-kit';
+
+const stored = 'Great work @{u1}, please check with @{u2}';
+const parts = renderCommentMessage(stored, users);
+// [ 'Great work ', <span>Alice Johnson</span>, ', please check with ', <span>Bob Smith</span>, '' ]
+
+// Append to DOM
+parts.forEach((part) => {
+  container.appendChild(
+    typeof part === 'string' ? document.createTextNode(part) : part,
+  );
+});
+```
+
+### `renderCommentMessageToHTML(message, users, palette?)`
+
+Same as `renderCommentMessage`, but returns a single HTML string. Great for emails, server-side rendering, or `dangerouslySetInnerHTML`.
+
+```ts
+import { renderCommentMessageToHTML } from '@cursortag/mention-kit';
+
+const html = renderCommentMessageToHTML('Hey @{u1}!', users);
+// '<span style="...">Alice Johnson</span>'
+
+// In React (use with caution):
+<div dangerouslySetInnerHTML={{ __html: html }} />
+```
+
+### `DEFAULT_MENTION_PALETTE`
+
+The built-in array of hex colors used when a user has no `color` property. Export it to extend or override.
+
+```ts
+import { DEFAULT_MENTION_PALETTE } from '@cursortag/mention-kit';
+
+// Extend with your brand colors
+const palette = [...DEFAULT_MENTION_PALETTE, '#f59e0b', '#ec4899'];
+
+createMentionEditor({ ..., palette });
+```
+
+---
+
 ## Persistence
 
 Mentions are stored as `@{userId}` tokens. Save the serialised string and re-render it later:
 
 ```ts
-import { serializeToText, serializeToMarkdown } from '@cursortag/mention-kit';
+import { serializeToMarkdown, renderCommentMessageToHTML } from '@cursortag/mention-kit';
 
-// Store
-const stored = serializeToMarkdown(nodes);
-// "Great work @[Alice Johnson](u1), please check with @[Bob Smith](u2)."
+// 1. User submits a comment — store the markdown
+onSubmit={(text, { nodes }) => {
+  const stored = serializeToMarkdown(nodes);
+  // "Great work @[Alice Johnson](u1), please check with @[Bob Smith](u2)."
+  db.save(stored);
+}}
 
-// Re-render in React (returns (string | HTMLElement)[])
-import { renderCommentMessage } from '@cursortag/mention-kit/react';
-const parts = renderCommentMessage(stored, users);
-
-// Re-render to HTML string (for emails, SSR, etc.)
-import { renderCommentMessageToHTML } from '@cursortag/mention-kit';
+// 2. Later, re-render the stored string to HTML
 const html = renderCommentMessageToHTML(stored, users);
 ```
 
@@ -410,14 +515,14 @@ const users = [{ id: 'u1', name: 'Alice', color: '#7c3aed' }];
 
 ### Core (`@cursortag/mention-kit`)
 
-| Export                                             | Description                                 |
-| -------------------------------------------------- | ------------------------------------------- |
-| `createMentionEditor(opts)`                        | Creates a vanilla editor instance           |
-| `serializeToText(nodes)`                           | Nodes → plain text string                   |
-| `serializeToMarkdown(nodes)`                       | Nodes → `@[name](id)` markdown string       |
-| `renderCommentMessage(msg, users, palette?)`       | Stored string → `(string \| HTMLElement)[]` |
-| `renderCommentMessageToHTML(msg, users, palette?)` | Stored string → HTML string                 |
-| `DEFAULT_MENTION_PALETTE`                          | Built-in color array                        |
+| Export                                             | Description                                  |
+| -------------------------------------------------- | -------------------------------------------- |
+| `createMentionEditor(opts)`                        | Creates a vanilla editor instance            |
+| `serializeToText(nodes)`                           | Nodes to plain text string                   |
+| `serializeToMarkdown(nodes)`                       | Nodes to `@[name](id)` markdown string       |
+| `renderCommentMessage(msg, users, palette?)`       | Stored string to `(string \| HTMLElement)[]` |
+| `renderCommentMessageToHTML(msg, users, palette?)` | Stored string to HTML string                 |
+| `DEFAULT_MENTION_PALETTE`                          | Built-in color array                         |
 
 ### Types
 
@@ -435,6 +540,11 @@ type TextNode = { type: 'text'; text: string };
 type MentionNode = { type: 'mention'; user: MentionUser; displayName: string };
 type EditorNode = TextNode | MentionNode;
 
+interface EditorCallbackMeta {
+  nodes: EditorNode[];
+  mentionedUsers: MentionUser[];
+}
+
 interface MentionEditorInstance {
   getNodes: () => EditorNode[];
   setNodes: (nodes: EditorNode[], emit?: boolean) => void;
@@ -451,16 +561,16 @@ interface MentionEditorInstance {
 
 Full runnable examples live in [`examples/`](./examples):
 
-| File                                                                     | What it shows                                                        |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| [`examples/react/basic.tsx`](./examples/react/basic.tsx)                 | Drop-in `<MentionInput>`, submit/clear, serialise output             |
-| [`examples/react/with-hook.tsx`](./examples/react/with-hook.tsx)         | `useMentionEditor` hook, custom container, toolbar, load draft       |
-| [`examples/react/with-mui.tsx`](./examples/react/with-mui.tsx)           | MUI `<Box>` shell, send button, MUI swap-in comments                 |
-| [`examples/vue/basic.vue`](./examples/vue/basic.vue)                     | Drop-in `<MentionInput>`, `@submit`/`@change` emits, scoped styles   |
-| [`examples/vue/with-composable.vue`](./examples/vue/with-composable.vue) | `useMentionEditor`, reactive computed users, team filter, load draft |
+| File                                                                     | What it shows                                                                   |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| [`examples/react/basic.tsx`](./examples/react/basic.tsx)                 | Drop-in `<MentionInput>`, submit text + mentionedUsers, clear                   |
+| [`examples/react/with-hook.tsx`](./examples/react/with-hook.tsx)         | `useMentionEditor` hook, custom container, toolbar, live text + mentioned users |
+| [`examples/react/with-mui.tsx`](./examples/react/with-mui.tsx)           | MUI `<Box>` shell, send button                                                  |
+| [`examples/vue/basic.vue`](./examples/vue/basic.vue)                     | Drop-in `<MentionInput>`, `@submit`/`@change` emits                             |
+| [`examples/vue/with-composable.vue`](./examples/vue/with-composable.vue) | `useMentionEditor`, reactive computed users, team filter                        |
 
 ---
 
 ## License
 
-MIT © [Amay Churi](https://github.com/amchuri)
+MIT (c) [Amay Churi](https://github.com/amchuri)

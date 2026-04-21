@@ -13,7 +13,6 @@
 import { computed, ref } from 'vue';
 import {
   useMentionEditor,
-  serializeToText,
   type EditorNode,
   type MentionUser,
 } from '@cursortag/mention-kit/vue';
@@ -36,7 +35,7 @@ const DRAFT: EditorNode[] = [
 // ── State ─────────────────────────────────────────────────────────────────────
 
 const teamFilter = ref<'all' | 'eng' | 'design'>('all');
-const liveNodes = ref<EditorNode[]>([]);
+const liveText = ref('');
 
 // Reactive computed users — the getter in useMentionEditor always reads the
 // latest value, so swapping this list is picked up with no re-mount.
@@ -53,11 +52,11 @@ const editor = useMentionEditor({
   get users() {
     return visibleUsers.value;
   },
-  onChange: (nodes) => {
-    liveNodes.value = nodes;
+  onChange: (text) => {
+    liveText.value = text;
   },
-  onSubmit: (nodes) => {
-    alert(`Submitted: ${serializeToText(nodes)}`);
+  onSubmit: (text) => {
+    alert(`Submitted: ${text}`);
     editor.clear();
   },
   placeholder: 'Write a comment…',
@@ -114,9 +113,9 @@ function loadDraft() {
     </div>
 
     <!-- Live output -->
-    <div v-if="liveNodes.length" class="preview">
+    <div v-if="liveText" class="preview">
       <span class="label">Live text:</span>
-      <code>{{ serializeToText(liveNodes) }}</code>
+      <code>{{ liveText }}</code>
     </div>
   </div>
 </template>

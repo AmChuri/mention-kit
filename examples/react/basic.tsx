@@ -3,7 +3,8 @@
  *
  * Shows:
  *  - Minimal setup
- *  - Reading submitted content
+ *  - Reading submitted text directly
+ *  - Accessing nodes and mentionedUsers from meta
  *  - Resetting after submit
  *  - Serialising nodes to plain text / markdown
  */
@@ -12,7 +13,7 @@ import { useRef, useState } from 'react';
 import {
   MentionInput,
   serializeToMarkdown,
-  serializeToText,
+  type EditorCallbackMeta,
   type EditorNode,
   type MentionEditorInstance,
   type MentionUser,
@@ -30,10 +31,17 @@ const USERS: MentionUser[] = [
 
 export function BasicExample() {
   const editorRef = useRef<MentionEditorInstance>(null);
-  const [submitted, setSubmitted] = useState<EditorNode[]>([]);
+  const [submittedText, setSubmittedText] = useState('');
+  const [submittedNodes, setSubmittedNodes] = useState<EditorNode[]>([]);
+  const [mentioned, setMentioned] = useState<MentionUser[]>([]);
 
-  const handleSubmit = (nodes: EditorNode[]) => {
-    setSubmitted(nodes);
+  const handleSubmit = (
+    text: string,
+    { nodes, mentionedUsers }: EditorCallbackMeta,
+  ) => {
+    setSubmittedText(text);
+    setSubmittedNodes(nodes);
+    setMentioned(mentionedUsers);
     editorRef.current?.clear();
   };
 
@@ -65,28 +73,18 @@ export function BasicExample() {
       </p>
 
       {/* Show what was submitted */}
-      {submitted.length > 0 && (
+      {submittedText && (
         <div style={{ marginTop: 24 }}>
           <h3>Last submitted</h3>
 
           <table
             style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}
           >
-            <thead>
-              <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                <th style={{ textAlign: 'left', padding: '4px 8px' }}>
-                  format
-                </th>
-                <th style={{ textAlign: 'left', padding: '4px 8px' }}>value</th>
-              </tr>
-            </thead>
             <tbody>
               <tr>
-                <td style={{ padding: '4px 8px', color: '#6b7280' }}>
-                  plain text
-                </td>
+                <td style={{ padding: '4px 8px', color: '#6b7280' }}>text</td>
                 <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>
-                  {serializeToText(submitted)}
+                  {submittedText}
                 </td>
               </tr>
               <tr>
@@ -94,7 +92,15 @@ export function BasicExample() {
                   markdown
                 </td>
                 <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>
-                  {serializeToMarkdown(submitted)}
+                  {serializeToMarkdown(submittedNodes)}
+                </td>
+              </tr>
+              <tr>
+                <td style={{ padding: '4px 8px', color: '#6b7280' }}>
+                  mentioned
+                </td>
+                <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>
+                  {mentioned.map((u) => u.name).join(', ') || '(none)'}
                 </td>
               </tr>
             </tbody>
@@ -114,7 +120,7 @@ export function BasicExample() {
                 borderRadius: 4,
               }}
             >
-              {JSON.stringify(submitted, null, 2)}
+              {JSON.stringify(submittedNodes, null, 2)}
             </pre>
           </details>
         </div>

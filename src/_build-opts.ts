@@ -5,6 +5,7 @@
  */
 
 import {
+  type EditorCallbackMeta,
   type EditorNode,
   type MentionEditorOptions,
   type MentionUser,
@@ -12,8 +13,8 @@ import {
 
 export interface BindingCallbacks {
   getUsers: () => MentionUser[];
-  onChange: (nodes: EditorNode[]) => void;
-  onSubmit: (nodes: EditorNode[]) => void;
+  onChange: (text: string, meta: EditorCallbackMeta) => void;
+  onSubmit: (text: string, meta: EditorCallbackMeta) => void;
 }
 
 export type LooseOpts = Omit<

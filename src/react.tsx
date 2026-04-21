@@ -51,6 +51,7 @@ import { buildEditorOpts } from './_build-opts';
 // ─── Re-exports ───────────────────────────────────────────────────────────────
 
 export type {
+  EditorCallbackMeta,
   EditorNode,
   MentionEditorInstance,
   MentionEditorOptions,
@@ -116,8 +117,8 @@ export function useMentionEditor(
     const instance = createMentionEditor(
       buildEditorOpts(containerRef.current, opts, {
         getUsers: () => optsRef.current.users,
-        onChange: (nodes) => optsRef.current.onChange?.(nodes),
-        onSubmit: (nodes) => optsRef.current.onSubmit?.(nodes),
+        onChange: (text, meta) => optsRef.current.onChange?.(text, meta),
+        onSubmit: (text, meta) => optsRef.current.onSubmit?.(text, meta),
       }),
     );
 
@@ -196,8 +197,8 @@ export const MentionInput = forwardRef<
     const instance = createMentionEditor(
       buildEditorOpts(containerRef.current, editorOpts, {
         getUsers: () => optsRef.current.users,
-        onChange: (nodes) => optsRef.current.onChange?.(nodes),
-        onSubmit: (nodes) => optsRef.current.onSubmit?.(nodes),
+        onChange: (text, meta) => optsRef.current.onChange?.(text, meta),
+        onSubmit: (text, meta) => optsRef.current.onSubmit?.(text, meta),
       }),
     );
 

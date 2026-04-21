@@ -171,7 +171,10 @@ describe('createMentionEditor – onChange', () => {
     const { editor } = createEditor({ onChange });
     editor.setNodes([text('test')], true);
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange).toHaveBeenCalledWith([{ type: 'text', text: 'test' }]);
+    expect(onChange).toHaveBeenCalledWith('test', {
+      nodes: [{ type: 'text', text: 'test' }],
+      mentionedUsers: [],
+    });
     editor.destroy();
   });
 

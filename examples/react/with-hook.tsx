@@ -4,16 +4,14 @@
  * Shows:
  *  - useMentionEditor hook (BYO container element)
  *  - Wiring into a hand-rolled "textarea"-style div (Tailwind classes)
- *  - Live onChange display
+ *  - Live onChange display (text is the first arg)
  *  - Programmatic setNodes (loading a draft)
- *  - Dynamic users list (filtering as you type is handled by the editor;
- *    this shows how to swap the full list reactively)
+ *  - Accessing mentionedUsers from meta
  */
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   useMentionEditor,
-  serializeToText,
   type EditorNode,
   type MentionUser,
 } from '@cursortag/mention-kit/react';
@@ -36,23 +34,23 @@ const DRAFT: EditorNode[] = [
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function HookExample() {
-  const [nodes, setNodes] = useState<EditorNode[]>([]);
+  const [liveText, setLiveText] = useState('');
+  const [mentioned, setMentioned] = useState<MentionUser[]>([]);
   const [disabled, setDisabled] = useState(false);
 
-  // useMentionEditor — hand the containerRef to whatever element you want.
   const editor = useMentionEditor({
     users: ALL_USERS,
-    onChange: setNodes,
-    onSubmit: (submitted) => {
-      alert(`Submitted: ${serializeToText(submitted)}`);
+    onChange: (text, { mentionedUsers }) => {
+      setLiveText(text);
+      setMentioned(mentionedUsers);
+    },
+    onSubmit: (text) => {
+      alert(`Submitted: ${text}`);
       editor.clear();
     },
     disabled,
     placeholder: disabled ? 'Editor is disabled' : 'Write a comment…',
   });
-
-  // ── Tailwind-style container ───────────────────────────────────────────────
-  // The ref goes on the actual editing surface. Wrap it however you want.
 
   return (
     <div
@@ -60,7 +58,6 @@ export function HookExample() {
     >
       <h2>@cursortag/mention-kit · React hook</h2>
 
-      {/* Custom container — style anything around the ref'd element */}
       <div
         style={{
           border: '1px solid #d1d5db',
@@ -91,10 +88,6 @@ export function HookExample() {
           </label>
         </div>
 
-        {/*
-          This div is the editor surface.
-          containerRef is attached here — the library takes over the inside.
-        */}
         <div
           ref={editor.containerRef}
           style={{
@@ -107,13 +100,17 @@ export function HookExample() {
         />
       </div>
 
-      {/* Live node preview */}
-      {nodes.length > 0 && (
+      {/* Live preview */}
+      {liveText && (
         <div style={{ marginTop: 16, fontSize: 13 }}>
           <strong>Live text:</strong>{' '}
-          <span style={{ fontFamily: 'monospace' }}>
-            {serializeToText(nodes)}
-          </span>
+          <span style={{ fontFamily: 'monospace' }}>{liveText}</span>
+          {mentioned.length > 0 && (
+            <div style={{ marginTop: 4 }}>
+              <strong>Mentioned:</strong>{' '}
+              {mentioned.map((u) => u.name).join(', ')}
+            </div>
+          )}
         </div>
       )}
     </div>

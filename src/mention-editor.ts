@@ -57,14 +57,21 @@ export type MentionNode = {
 };
 export type EditorNode = TextNode | MentionNode;
 
+export interface EditorCallbackMeta {
+  /** Structured node array — the full document model. */
+  nodes: EditorNode[];
+  /** De-duplicated list of users mentioned in the current content. */
+  mentionedUsers: MentionUser[];
+}
+
 export interface MentionEditorOptions {
   container: HTMLElement;
   get users(): MentionUser[];
   placeholder?: string;
   maxSuggestions?: number;
   disabled?: boolean;
-  onChange?: (nodes: EditorNode[]) => void;
-  onSubmit?: (nodes: EditorNode[]) => void;
+  onChange?: (text: string, meta: EditorCallbackMeta) => void;
+  onSubmit?: (text: string, meta: EditorCallbackMeta) => void;
   popoverPosition?: Partial<
     Record<'top' | 'left' | 'bottom' | 'right', number | string>
   >;
@@ -80,6 +87,26 @@ export interface MentionEditorInstance {
   destroy: () => void;
   setPlaceholder: (text: string) => void;
 }
+
+// ─── Callback data builder ───────────────────────────────────────────────────
+
+/** @internal Builds text + meta from a node array for callbacks. */
+const buildCallbackArgs = (
+  nodes: EditorNode[],
+): [string, EditorCallbackMeta] => {
+  const text = nodes
+    .map((n) => (n.type === 'text' ? n.text : `@${n.displayName}`))
+    .join('');
+  const seen = new Set<string>();
+  const mentionedUsers: MentionUser[] = [];
+  for (const n of nodes) {
+    if (n.type === 'mention' && !seen.has(n.user.id)) {
+      seen.add(n.user.id);
+      mentionedUsers.push(n.user);
+    }
+  }
+  return [text, { nodes, mentionedUsers }];
+};
 
 // ─── Serialisation helpers ────────────────────────────────────────────────────
 
@@ -630,7 +657,7 @@ const handleChipDeletion = (
   container: HTMLElement,
   chip: HTMLElement,
   direction: 'before' | 'after',
-  onChange?: (nodes: EditorNode[]) => void,
+  onChange?: (text: string, meta: EditorCallbackMeta) => void,
   palette: string[] = DEFAULT_MENTION_PALETTE,
 ): void => {
   const currentDisplay = chip.getAttribute(A_DISPLAY) ?? '';
@@ -673,7 +700,7 @@ const handleChipDeletion = (
       sel?.removeAllRanges();
       sel?.addRange(r);
     }
-    onChange?.(nodes);
+    onChange?.(...buildCallbackArgs(nodes));
   } else {
     // ── Shrink chip in place ─────────────────────────────────────────────────
     // Record chip's index in the DOM BEFORE rebuild so we can find it after.
@@ -698,7 +725,7 @@ const handleChipDeletion = (
       sel?.removeAllRanges();
       sel?.addRange(r);
     }
-    onChange?.(nodes);
+    onChange?.(...buildCallbackArgs(nodes));
   }
 };
 
@@ -712,7 +739,7 @@ const handleChipDeletion = (
  */
 const handleSelectionDeletion = (
   container: HTMLElement,
-  onChange?: (nodes: EditorNode[]) => void,
+  onChange?: (text: string, meta: EditorCallbackMeta) => void,
   palette: string[] = DEFAULT_MENTION_PALETTE,
 ): void => {
   const offsets = getSelectionOffsets(container);
@@ -747,7 +774,7 @@ const handleSelectionDeletion = (
   }
 
   nodesToDom(container, newNodes, palette);
-  onChange?.(newNodes);
+  onChange?.(...buildCallbackArgs(newNodes));
   setCaretOffset(container, caretPos);
 };
 
@@ -1078,7 +1105,7 @@ export const createMentionEditor = (
     }
 
     nodesToDom(editable, newNodes, palette);
-    onChange?.(newNodes);
+    onChange?.(...buildCallbackArgs(newNodes));
 
     // Locate chip by index, not by id — fixes duplicate-mention caret jump
     const chipDomNode = editable.childNodes[insertedAt] as
@@ -1108,7 +1135,7 @@ export const createMentionEditor = (
     const nodes = domToNodes(editable, palette);
     nodesToDom(editable, nodes, palette);
     setCaretOffset(editable, caret);
-    onChange?.(nodes);
+    onChange?.(...buildCallbackArgs(nodes));
     updatePlaceholder();
 
     const flat = nodes
@@ -1184,8 +1211,8 @@ export const createMentionEditor = (
         e.preventDefault();
         handleSelectionDeletion(
           editable,
-          (nodes) => {
-            onChange?.(nodes);
+          (text, meta) => {
+            onChange?.(text, meta);
             updatePlaceholder();
           },
           palette,
@@ -1201,8 +1228,8 @@ export const createMentionEditor = (
           editable,
           chip,
           direction,
-          (nodes) => {
-            onChange?.(nodes);
+          (text, meta) => {
+            onChange?.(text, meta);
             updatePlaceholder();
           },
           palette,
@@ -1229,7 +1256,7 @@ export const createMentionEditor = (
         const nodes = domToNodes(editable, palette);
         nodesToDom(editable, nodes, palette);
         setCaretOffset(editable, caret);
-        onChange?.(nodes);
+        onChange?.(...buildCallbackArgs(nodes));
         updatePlaceholder();
       }
       return;
@@ -1239,7 +1266,7 @@ export const createMentionEditor = (
     if (e.key === 'Enter' && !e.shiftKey) {
       if (onSubmit) {
         e.preventDefault();
-        onSubmit(domToNodes(editable, palette));
+        onSubmit(...buildCallbackArgs(domToNodes(editable, palette)));
       }
       // No onSubmit — let the browser insert a newline naturally
     }
@@ -1275,7 +1302,7 @@ export const createMentionEditor = (
     nodesToDom(editable, nodes, palette);
     updatePlaceholder();
     placeCaretAtEnd();
-    if (emit) onChange?.(nodes);
+    if (emit) onChange?.(...buildCallbackArgs(nodes));
   };
 
   const setPlaceholder = (text: string): void => {
@@ -1293,7 +1320,7 @@ export const createMentionEditor = (
     editable.innerHTML = '';
     closeDropdown();
     updatePlaceholder();
-    onChange?.([]);
+    onChange?.(...buildCallbackArgs([]));
   };
 
   const destroy = (): void => {
