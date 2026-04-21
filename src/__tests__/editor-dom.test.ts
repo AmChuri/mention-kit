@@ -518,6 +518,7 @@ describe('clear', () => {
     expect(onChange).toHaveBeenCalledWith('', {
       nodes: [],
       mentionedUsers: [],
+      mentionedUserIds: [],
     });
     editor.destroy();
   });

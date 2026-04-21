@@ -62,6 +62,8 @@ export interface EditorCallbackMeta {
   nodes: EditorNode[];
   /** De-duplicated list of users mentioned in the current content. */
   mentionedUsers: MentionUser[];
+  /** De-duplicated user IDs — saves a `.map(u => u.id)`. */
+  mentionedUserIds: string[];
 }
 
 export interface MentionEditorOptions {
@@ -72,6 +74,8 @@ export interface MentionEditorOptions {
   disabled?: boolean;
   onChange?: (text: string, meta: EditorCallbackMeta) => void;
   onSubmit?: (text: string, meta: EditorCallbackMeta) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
   popoverPosition?: Partial<
     Record<'top' | 'left' | 'bottom' | 'right', number | string>
   >;
@@ -86,6 +90,9 @@ export interface MentionEditorInstance {
   clear: () => void;
   destroy: () => void;
   setPlaceholder: (text: string) => void;
+  setDisabled: (value: boolean) => void;
+  /** The underlying contentEditable DOM element. */
+  readonly el: HTMLElement;
 }
 
 // ─── Callback data builder ───────────────────────────────────────────────────
@@ -105,7 +112,14 @@ const buildCallbackArgs = (
       mentionedUsers.push(n.user);
     }
   }
-  return [text, { nodes, mentionedUsers }];
+  return [
+    text,
+    {
+      nodes,
+      mentionedUsers,
+      mentionedUserIds: mentionedUsers.map((u) => u.id),
+    },
+  ];
 };
 
 // ─── Serialisation helpers ────────────────────────────────────────────────────
@@ -119,6 +133,40 @@ export const serializeToMarkdown = (nodes: EditorNode[]): string =>
       n.type === 'text' ? n.text : `@[${n.displayName}](${n.user.id})`,
     )
     .join('');
+
+/**
+ * Serialises editor nodes into the `@{userId}` token format consumed by
+ * `renderCommentMessage`, `renderCommentMessageToHTML`, and `parsePersist`.
+ * This is the recommended format for database storage.
+ */
+export const serializeToPersist = (nodes: EditorNode[]): string =>
+  nodes.map((n) => (n.type === 'text' ? n.text : `@{${n.user.id}}`)).join('');
+
+/**
+ * Parses a persisted `@{userId}` string back into `EditorNode[]`.
+ * Users not found in the supplied list render as "Unknown User".
+ */
+export const parsePersist = (
+  raw: string,
+  users: MentionUser[],
+): EditorNode[] => {
+  const nodes: EditorNode[] = [];
+  for (const part of raw.split(/(@\{[^}]+\})/g)) {
+    const match = part.match(/^@\{(.+)\}$/);
+    if (match) {
+      const id = match[1]!;
+      const user = users.find((u) => u.id === id);
+      nodes.push({
+        type: 'mention',
+        user: user ?? { id, name: 'Unknown User' },
+        displayName: user?.name ?? 'Unknown User',
+      });
+    } else if (part) {
+      nodes.push({ type: 'text', text: part });
+    }
+  }
+  return nodes;
+};
 
 // ─── Security helpers ─────────────────────────────────────────────────────────
 
@@ -938,6 +986,8 @@ export const createMentionEditor = (
     disabled = false,
     onChange,
     onSubmit,
+    onFocus,
+    onBlur,
     popoverPosition,
     renderUser,
     palette = DEFAULT_MENTION_PALETTE,
@@ -1284,11 +1334,23 @@ export const createMentionEditor = (
     }
   };
 
+  // ── Focus / blur ──────────────────────────────────────────────────────────────
+
+  const handleFocus = (): void => {
+    rescueCaretFromChip();
+    onFocus?.();
+  };
+
+  const handleBlur = (): void => {
+    onBlur?.();
+  };
+
   // ── Wire events ───────────────────────────────────────────────────────────────
 
   editable.addEventListener('input', onInput);
   editable.addEventListener('keydown', onKeyDown);
-  editable.addEventListener('focus', rescueCaretFromChip);
+  editable.addEventListener('focus', handleFocus);
+  editable.addEventListener('blur', handleBlur);
   editable.addEventListener('click', rescueCaretFromChip);
   document.addEventListener('click', onDocClick);
 
@@ -1323,10 +1385,15 @@ export const createMentionEditor = (
     onChange?.(...buildCallbackArgs([]));
   };
 
+  const setDisabled = (value: boolean): void => {
+    editable.contentEditable = value ? 'false' : 'true';
+  };
+
   const destroy = (): void => {
     editable.removeEventListener('input', onInput);
     editable.removeEventListener('keydown', onKeyDown);
-    editable.removeEventListener('focus', rescueCaretFromChip);
+    editable.removeEventListener('focus', handleFocus);
+    editable.removeEventListener('blur', handleBlur);
     editable.removeEventListener('click', rescueCaretFromChip);
     document.removeEventListener('click', onDocClick);
     closeDropdown();
@@ -1340,5 +1407,7 @@ export const createMentionEditor = (
     clear,
     destroy,
     setPlaceholder,
+    setDisabled,
+    el: editable,
   };
 };

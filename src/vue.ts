@@ -2,34 +2,15 @@
  * @file vue.ts
  * @description Vue 3 bindings for @cursortag/mention-kit.
  *
- * Two integration paths:
- *
- * ## 1. Drop-in component (quick start)
+ * ## 1. Drop-in component
  * ```vue
- * <script setup lang="ts">
- * import { MentionInput } from '@cursortag/mention-kit/vue';
- * </script>
- *
- * <template>
- *   <MentionInput :users="users" placeholder="Write…" @submit="save" />
- * </template>
+ * <MentionInput :users="users" @submit="(text) => save(text)" />
  * ```
  *
- * ## 2. Composable (BYO container — full control)
+ * ## 2. Composable (BYO container)
  * ```vue
- * <script setup lang="ts">
- * import { useMentionEditor } from '@cursortag/mention-kit/vue';
- *
- * const editor = useMentionEditor({
- *   get users() { return userList.value; }, // reactive getter
- *   onSubmit: save,
- * });
- * </script>
- *
- * <template>
- *   <!-- attach containerRef to any element: native, Element Plus, Vuetify… -->
- *   <el-input :ref="editor.containerRef" />
- * </template>
+ * const editor = useMentionEditor({ get users() { return list.value; } });
+ * <div :ref="editor.containerRef" />
  * ```
  */
 
@@ -46,6 +27,7 @@ import {
 
 import {
   createMentionEditor,
+  parsePersist,
   type EditorCallbackMeta,
   type EditorNode,
   type MentionEditorInstance,
@@ -68,9 +50,11 @@ export type {
 
 export {
   DEFAULT_MENTION_PALETTE,
+  parsePersist,
   renderCommentMessage,
   renderCommentMessageToHTML,
   serializeToMarkdown,
+  serializeToPersist,
   serializeToText,
 } from './mention-editor';
 
@@ -78,41 +62,29 @@ export {
 
 export type MentionBindingOptions = Omit<MentionEditorOptions, 'container'> & {
   defaultNodes?: EditorNode[];
+  /** Initial content as a persisted `@{userId}` string. */
+  defaultValue?: string;
 };
 
 // ─── useMentionEditor ─────────────────────────────────────────────────────────
 
 export interface UseMentionEditorReturn {
-  /**
-   * Attach to any element with `:ref="editor.containerRef"`.
-   * Works with native elements and component libraries that forward refs.
-   */
   containerRef: Ref<HTMLDivElement | null>;
   getNodes: () => EditorNode[];
   setNodes: (nodes: EditorNode[], emit?: boolean) => void;
   clear: () => void;
   focus: () => void;
   setPlaceholder: (text: string) => void;
+  setDisabled: (value: boolean) => void;
+  readonly el: HTMLElement | null;
 }
 
-/**
- * Headless composable — you own the container element.
- *
- * @example
- * ```ts
- * const editor = useMentionEditor({
- *   get users() { return users.value; }, // reactive getter
- *   onChange: (nodes) => (value.value = nodes),
- * });
- * ```
- */
 export function useMentionEditor(
   opts: MentionBindingOptions,
 ): UseMentionEditorReturn {
   const containerRef = ref<HTMLDivElement | null>(null);
   const instanceRef = ref<MentionEditorInstance | null>(null);
 
-  // Plain mutable ref — keeps callbacks live without triggering Vue reactivity.
   const optsRef = { current: opts };
 
   onMounted(() => {
@@ -131,6 +103,8 @@ export function useMentionEditor(
 
     if (opts.defaultNodes?.length) {
       editor.setNodes(opts.defaultNodes);
+    } else if (opts.defaultValue) {
+      editor.setNodes(parsePersist(opts.defaultValue, opts.users));
     }
   });
 
@@ -139,11 +113,17 @@ export function useMentionEditor(
     instanceRef.value = null;
   });
 
-  // Sync placeholder when it changes reactively.
   watch(
     () => opts.placeholder,
     (p) => {
       if (p !== undefined) instanceRef.value?.setPlaceholder(p);
+    },
+  );
+
+  watch(
+    () => opts.disabled,
+    (d) => {
+      instanceRef.value?.setDisabled(!!d);
     },
   );
 
@@ -154,33 +134,15 @@ export function useMentionEditor(
     clear: () => instanceRef.value?.clear(),
     focus: () => instanceRef.value?.focus(),
     setPlaceholder: (text) => instanceRef.value?.setPlaceholder(text),
+    setDisabled: (value) => instanceRef.value?.setDisabled(value),
+    get el() {
+      return instanceRef.value?.el ?? null;
+    },
   };
 }
 
 // ─── MentionInput component ───────────────────────────────────────────────────
 
-/**
- * Drop-in Vue 3 component. Renders a single unstyled `<div>`.
- *
- * **Emits:** `change(nodes: EditorNode[])`, `submit(nodes: EditorNode[])`
- * **Exposes:** `getNodes`, `setNodes`, `clear`, `focus`, `setPlaceholder`
- *
- * @example
- * ```vue
- * <MentionInput
- *   :users="users"
- *   placeholder="Write a comment…"
- *   class="rounded border p-2"
- *   @submit="onSubmit"
- * />
- * ```
- *
- * @example Imperative access via template ref
- * ```vue
- * <MentionInput ref="editorRef" :users="users" />
- * <!-- editorRef.value.clear() -->
- * ```
- */
 export const MentionInput = defineComponent({
   name: 'MentionInput',
 
@@ -190,14 +152,18 @@ export const MentionInput = defineComponent({
     maxSuggestions: { type: Number, default: undefined },
     disabled: { type: Boolean, default: undefined },
     palette: { type: Array as PropType<string[]>, default: undefined },
-    defaultNodes: { type: Array as PropType<EditorNode[]>, default: undefined },
-    // popoverPosition and renderUser are advanced options; reach for the
-    // composable if you need them.
+    defaultNodes: {
+      type: Array as PropType<EditorNode[]>,
+      default: undefined,
+    },
+    defaultValue: { type: String, default: undefined },
   },
 
   emits: {
     change: (_text: string, _meta: EditorCallbackMeta) => true,
     submit: (_text: string, _meta: EditorCallbackMeta) => true,
+    focus: () => true,
+    blur: () => true,
   },
 
   setup(props, { emit, expose, attrs }) {
@@ -207,8 +173,6 @@ export const MentionInput = defineComponent({
     onMounted(() => {
       if (!containerRef.value) return;
 
-      // Build options imperatively to satisfy exactOptionalPropertyTypes —
-      // Vue's LooseRequired<props> differs from our LooseOpts type.
       const editorOpts: MentionEditorOptions = {
         container: containerRef.value,
         get users() {
@@ -216,6 +180,8 @@ export const MentionInput = defineComponent({
         },
         onChange: (text, meta) => emit('change', text, meta),
         onSubmit: (text, meta) => emit('submit', text, meta),
+        onFocus: () => emit('focus'),
+        onBlur: () => emit('blur'),
       };
       if (props.placeholder !== undefined)
         editorOpts.placeholder = props.placeholder;
@@ -225,11 +191,12 @@ export const MentionInput = defineComponent({
       if (props.palette !== undefined) editorOpts.palette = props.palette;
 
       const editor = createMentionEditor(editorOpts);
-
       instanceRef.value = editor;
 
       if (props.defaultNodes?.length) {
         editor.setNodes(props.defaultNodes);
+      } else if (props.defaultValue) {
+        editor.setNodes(parsePersist(props.defaultValue, props.users));
       }
     });
 
@@ -245,7 +212,13 @@ export const MentionInput = defineComponent({
       },
     );
 
-    // Expose instance API via template ref.
+    watch(
+      () => props.disabled,
+      (d) => {
+        if (d !== undefined) instanceRef.value?.setDisabled(d);
+      },
+    );
+
     expose({
       getNodes: () => instanceRef.value?.getNodes() ?? [],
       setNodes: (nodes: EditorNode[], emitChange?: boolean) =>
@@ -253,9 +226,12 @@ export const MentionInput = defineComponent({
       clear: () => instanceRef.value?.clear(),
       focus: () => instanceRef.value?.focus(),
       setPlaceholder: (text: string) => instanceRef.value?.setPlaceholder(text),
+      setDisabled: (value: boolean) => instanceRef.value?.setDisabled(value),
+      get el() {
+        return instanceRef.value?.el ?? null;
+      },
     });
 
-    // Render a plain div, forwarding any extra attrs (class, style, data-*, etc.)
     return () => h('div', { ref: containerRef, ...attrs });
   },
 });

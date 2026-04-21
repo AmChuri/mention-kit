@@ -2,6 +2,8 @@ export {
   createMentionEditor,
   serializeToText,
   serializeToMarkdown,
+  serializeToPersist,
+  parsePersist,
   renderCommentMessage,
   renderCommentMessageToHTML,
   DEFAULT_MENTION_PALETTE,

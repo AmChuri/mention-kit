@@ -174,6 +174,7 @@ describe('createMentionEditor – onChange', () => {
     expect(onChange).toHaveBeenCalledWith('test', {
       nodes: [{ type: 'text', text: 'test' }],
       mentionedUsers: [],
+      mentionedUserIds: [],
     });
     editor.destroy();
   });
