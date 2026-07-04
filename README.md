@@ -713,13 +713,15 @@ interface MentionEditorInstance {
 
 Full runnable examples live in [`examples/`](./examples):
 
-| File                                                                     | What it shows                                                                   |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| [`examples/react/basic.tsx`](./examples/react/basic.tsx)                 | Drop-in `<MentionInput>`, submit text + mentionedUsers, clear                   |
-| [`examples/react/with-hook.tsx`](./examples/react/with-hook.tsx)         | `useMentionEditor` hook, custom container, toolbar, live text + mentioned users |
-| [`examples/react/with-mui.tsx`](./examples/react/with-mui.tsx)           | MUI `<Box>` shell, send button                                                  |
-| [`examples/vue/basic.vue`](./examples/vue/basic.vue)                     | Drop-in `<MentionInput>`, `@submit`/`@change` emits                             |
-| [`examples/vue/with-composable.vue`](./examples/vue/with-composable.vue) | `useMentionEditor`, reactive computed users, team filter                        |
+| File                                                                         | What it shows                                                                   |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| [`examples/react/basic.tsx`](./examples/react/basic.tsx)                     | Drop-in `<MentionInput>`, submit text + mentionedUsers, clear                   |
+| [`examples/react/with-hook.tsx`](./examples/react/with-hook.tsx)             | `useMentionEditor` hook, custom container, toolbar, live text + mentioned users |
+| [`examples/react/with-mui.tsx`](./examples/react/with-mui.tsx)               | MUI `<Box>` shell, send button                                                  |
+| [`examples/react/with-hovercards.tsx`](./examples/react/with-hovercards.tsx) | `<RenderedMessage hovercard>`, copyable fields, light/dark `theme` toggle       |
+| [`examples/vue/basic.vue`](./examples/vue/basic.vue)                         | Drop-in `<MentionInput>`, `@submit`/`@change` emits                             |
+| [`examples/vue/with-composable.vue`](./examples/vue/with-composable.vue)     | `useMentionEditor`, reactive computed users, team filter                        |
+| [`examples/vue/with-hovercards.vue`](./examples/vue/with-hovercards.vue)     | `renderCommentMessage` + `attachHovercards`, theme + cleanup on unmount         |
 
 ---
 

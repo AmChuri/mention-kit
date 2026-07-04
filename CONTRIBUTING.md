@@ -68,6 +68,30 @@ yarn dev
 
 Open `http://localhost:5173/mention-kit/` in your browser.
 
+## Releasing (publishing to npm)
+
+The published package serves both npm and yarn consumers — they install from the
+same registry (`npm install` / `yarn add @cursortag/mention-kit`).
+
+1. Bump `version` in `package.json` and add a `CHANGELOG.md` entry.
+2. Preview the exact tarball without publishing:
+
+   ```bash
+   npm run release:dry      # or: yarn release:dry
+   ```
+
+3. Ship it (runs `build` + `typecheck` + `test` first via `prepublishOnly`):
+
+   ```bash
+   npm run release          # or: yarn release
+   ```
+
+Both scripts pin `--registry https://registry.npmjs.org`, so they publish to npm
+even when invoked through yarn (yarn otherwise points at its read-only mirror).
+Publishing requires `npm login` (or an `NPM_TOKEN`). Alternatively, cutting a
+GitHub Release triggers `.github/workflows/publish.yml`, which publishes with
+provenance automatically.
+
 ## Reporting bugs
 
 Open an issue at [github.com/amchuri/mention-kit/issues](https://github.com/amchuri/mention-kit/issues) with:
