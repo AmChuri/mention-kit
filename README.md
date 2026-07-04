@@ -13,6 +13,7 @@
   <a href="https://www.npmjs.com/package/@cursortag/mention-kit"><img src="https://img.shields.io/npm/v/@cursortag/mention-kit?color=7c3aed&label=npm" alt="npm version" /></a>
   <a href="https://github.com/amchuri/mention-kit/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/@cursortag/mention-kit?color=059669" alt="license" /></a>
   <a href="https://www.npmjs.com/package/@cursortag/mention-kit"><img src="https://img.shields.io/npm/dt/@cursortag/mention-kit?color=0891b2" alt="downloads" /></a>
+  <a href="https://bundlephobia.com/package/@cursortag/mention-kit"><img src="https://img.shields.io/bundlephobia/minzip/@cursortag/mention-kit?color=ec4899&label=gzip" alt="bundle size" /></a>
   <a href="https://amchuri.github.io/mention-kit/"><img src="https://img.shields.io/badge/demo-live-d97706" alt="demo" /></a>
 </p>
 
@@ -51,6 +52,31 @@
 - **Controlled or uncontrolled** — drive it with a `value` prop, or leave it self-managed
 - **Accessible** — ARIA combobox semantics (`aria-expanded` / `aria-controls` / `aria-activedescendant`), keyboard-first
 - **Persistence format** — `@{userId}` / `#{tagId}` tokens for easy storage and re-render
+
+The core is **~11.5 KB gzipped with zero runtime dependencies** (the React and
+Vue entry points are ~13 KB each).
+
+---
+
+## Comparison
+
+Most mention libraries are tied to one framework, or bolted onto a full
+rich-text engine (ProseMirror / Lexical). mention-kit is a small, framework-
+agnostic primitive built on plain `contentEditable`.
+
+|                           | mention-kit               | react-mentions   | rc-mentions      | @tiptap/extension-mention | lexical-beautiful-mentions |
+| ------------------------- | ------------------------- | ---------------- | ---------------- | ------------------------- | -------------------------- |
+| Frameworks                | **React · Vue · vanilla** | React            | React            | Tiptap (React/Vue/JS)     | React (Lexical)            |
+| Runtime deps              | **none**                  | a few            | Ant Design stack | Tiptap + ProseMirror      | Lexical                    |
+| Built on                  | `contentEditable`         | textarea overlay | textarea         | ProseMirror               | Lexical                    |
+| Requires an editor engine | **no**                    | no               | no               | yes                       | yes                        |
+| Multiple triggers         | ✓                         | ✓                | ✓                | ✓                         | ✓                          |
+| Async suggestions         | ✓                         | ✓                | ✓                | ✓                         | ✓                          |
+| Creatable items           | ✓                         | —                | —                | plugin                    | ✓                          |
+| Hover cards / theming     | ✓                         | —                | —                | BYO                       | —                          |
+
+If you already run Tiptap or Lexical, use their mention extension. If you want a
+tiny, standalone `@mention` input that works anywhere, that's this.
 
 ---
 
@@ -912,6 +938,47 @@ interface MentionEditorInstance {
   destroy: () => void;
   setPlaceholder: (text: string) => void;
 }
+```
+
+---
+
+## Recipes
+
+**Slack-style** — mention people with `@`, drop emoji with `:`:
+
+```tsx
+<MentionInput
+  users={people}
+  triggers={[
+    { trigger: '@', items: people },
+    { trigger: ':', items: emoji, label: 'Emoji' },
+  ]}
+  onSubmit={(text) => send(text)}
+/>
+```
+
+**Notion-style slash menu** — a `/` trigger that runs commands instead of
+inserting a chip:
+
+```tsx
+{
+  trigger: '/',
+  items: commands,
+  onSelect: (cmd, ctx) => {
+    if (cmd.id === 'date') ctx.insertText(new Date().toLocaleDateString());
+    else runCommand(cmd.id);   // open a dialog, toggle a block, …
+  },
+}
+```
+
+**GitHub-issue-style** — mention people with `@` and create labels on the fly
+with `#`:
+
+```tsx
+triggers={[
+  { trigger: '@', items: collaborators },
+  { trigger: '#', items: labels, allowCreate: true },  // "Create #needs-triage"
+]}
 ```
 
 ---
