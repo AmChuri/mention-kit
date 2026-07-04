@@ -275,6 +275,48 @@ describe('combobox a11y', () => {
   });
 });
 
+// ─── Creatable items ────────────────────────────────────────────────────────────
+
+describe('creatable items', () => {
+  it('offers a Create row for an unmatched query and inserts a new chip', () => {
+    const { editor, editable } = createEditor([
+      { trigger: '#', items: TAGS, allowCreate: true },
+    ]);
+    type(editable, '#urgent'); // not in TAGS (bug, feature)
+    expect(listbox()!.textContent).toContain('Create');
+
+    fireKeydown(editable, 'Enter'); // selects the Create row
+    const mention = editor.getNodes().find((n) => n.type === 'mention');
+    expect(mention).toMatchObject({ trigger: '#', displayName: 'urgent' });
+    expect(serializeToPersist(editor.getNodes())).toContain('#{urgent}');
+    editor.destroy();
+  });
+
+  it('uses onCreate to build the new item (custom id)', () => {
+    const { editor, editable } = createEditor([
+      {
+        trigger: '#',
+        items: TAGS,
+        onCreate: (q) => ({ id: `t-${q}`, name: q }),
+      },
+    ]);
+    type(editable, '#urgent');
+    fireKeydown(editable, 'Enter');
+    expect(serializeToPersist(editor.getNodes())).toContain('#{t-urgent}');
+    editor.destroy();
+  });
+
+  it('does not offer Create when an exact match already exists', () => {
+    const { editor, editable } = createEditor([
+      { trigger: '#', items: TAGS, allowCreate: true },
+    ]);
+    type(editable, '#bug'); // exact match
+    expect(listbox()!.textContent).not.toContain('Create');
+    expect(options()).toHaveLength(1);
+    editor.destroy();
+  });
+});
+
 // ─── Persistence & render round-trips ───────────────────────────────────────────
 
 describe('multi-trigger persistence', () => {

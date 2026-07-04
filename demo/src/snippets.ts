@@ -64,7 +64,8 @@ const tags   = [{ id: 't1', name: 'bug' }, { id: 't2', name: 'feature' }];
   placeholder="Try @ people, # tags, or / commands…"
   triggers={[
     { trigger: '@', items: people, label: 'Mention someone' },
-    { trigger: '#', items: tags,   label: 'Add a tag' },
+    // Creatable: type a new tag name → pick "Create …" to mint it.
+    { trigger: '#', items: tags, label: 'Add a tag', allowCreate: true },
     {
       trigger: '/',
       debounce: 200,            // debounce keystrokes

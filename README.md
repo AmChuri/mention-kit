@@ -560,6 +560,29 @@ Each trigger accepts:
 | `label`          | `string`                                       | `"Mention someone"` | Dropdown header                           |
 | `renderItem`     | `(item, selected) => HTMLElement`              | —                   | Custom row renderer                       |
 | `onSelect`       | `(item, ctx) => void`                          | —                   | Slash-command mode (see below)            |
+| `allowCreate`    | `boolean`                                      | `false`             | Offer a "Create …" row for new items      |
+| `onCreate`       | `(query) => MentionItem`                       | —                   | Build the created item (implies create)   |
+| `createLabel`    | `(query) => string`                            | `Create "<q>"`      | Label for the "Create …" row              |
+
+### Create new items (`allowCreate` / `onCreate`)
+
+Set `allowCreate` (or provide `onCreate`) and, when the query matches no existing
+item, the dropdown offers a **"Create …"** row. Selecting it inserts a brand-new
+mention chip — perfect for letting users add a `#tag` that doesn't exist yet.
+
+```ts
+{
+  trigger: '#',
+  items: tags,
+  allowCreate: true,
+  // Optional — mint your own id/color (default is { id: query, name: query }):
+  onCreate: (query) => ({ id: `tag:${query}`, name: query, color: '#0891b2' }),
+}
+```
+
+The created item is inserted like any other mention and persists as
+`#{tag:query}`. To re-render stored content containing created items, include
+them in `triggerItems` (accumulate them from `onCreate`).
 
 ### Slash commands (`onSelect`)
 
@@ -838,6 +861,9 @@ interface MentionTrigger {
   label?: string;
   renderItem?: (item: MentionItem, selected: boolean) => HTMLElement;
   onSelect?: (item: MentionItem, ctx: TriggerActionContext) => void; // slash-command mode
+  allowCreate?: boolean; // offer a "Create …" row for unmatched queries
+  onCreate?: (query: string) => MentionItem; // build the created item
+  createLabel?: (query: string) => string; // "Create …" row label
 }
 
 interface TriggerActionContext {

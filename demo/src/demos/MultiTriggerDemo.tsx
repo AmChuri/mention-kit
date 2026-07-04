@@ -1,6 +1,8 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   MentionInput,
+  RenderedMessage,
+  serializeToPersist,
   type MentionEditorInstance,
   type MentionItem,
 } from '@cursortag/mention-kit/react';
@@ -33,17 +35,38 @@ const searchCommands = (query: string): Promise<MentionItem[]> =>
 
 export function MultiTriggerDemo() {
   const ref = useRef<MentionEditorInstance>(null);
-  const [output, setOutput] = useState('');
+  const [submitted, setSubmitted] = useState('');
+  const [createdTags, setCreatedTags] = useState<MentionItem[]>([]);
+
+  // For the rendered preview, resolve both known and just-created tags.
+  const tagItems = useMemo(() => [...TAGS, ...createdTags], [createdTags]);
 
   return (
     <div className="demo-live">
       <MentionInput
         ref={ref}
         users={USERS}
-        placeholder="Try @ people, # tags, or / commands…"
+        placeholder="Try @ people, # tags (create new ones!), or / commands…"
         triggers={[
           { trigger: '@', items: USERS, label: 'Mention someone' },
-          { trigger: '#', items: TAGS, label: 'Add a tag' },
+          {
+            trigger: '#',
+            items: TAGS,
+            label: 'Add a tag',
+            color: '#0891b2',
+            // Creatable: type a new tag name and pick "Create …".
+            onCreate: (query) => {
+              const tag: MentionItem = {
+                id: `t-${query.toLowerCase().replace(/\s+/g, '-')}`,
+                name: query,
+                color: '#0891b2',
+              };
+              setCreatedTags((prev) =>
+                prev.some((t) => t.id === tag.id) ? prev : [...prev, tag],
+              );
+              return tag;
+            },
+          },
           {
             trigger: '/',
             items: searchCommands, // async
@@ -58,22 +81,30 @@ export function MultiTriggerDemo() {
             },
           },
         ]}
-        onSubmit={(text) => {
-          setOutput(text);
+        onSubmit={(_text, { nodes }) => {
+          setSubmitted(serializeToPersist(nodes));
           ref.current?.clear();
         }}
         className="demo-editor"
       />
 
       <p style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-        <kbd>@</kbd> people · <kbd>#</kbd> tags · <kbd>/</kbd> commands (async +
-        run an action) · <kbd>Enter</kbd> to submit
+        <kbd>@</kbd> people · <kbd>#</kbd> tags (create new ones) · <kbd>/</kbd>{' '}
+        commands (async + run an action) · <kbd>Enter</kbd> to submit
       </p>
 
-      {output && (
+      {submitted && (
         <div className="demo-output">
-          <span className="output-label">submitted</span>
-          <code>{output}</code>
+          <span className="output-label">rendered</span>
+          <RenderedMessage
+            message={submitted}
+            users={USERS}
+            triggerItems={[{ trigger: '#', items: tagItems }]}
+          />
+          <span className="output-label" style={{ marginTop: 8 }}>
+            stored
+          </span>
+          <code>{submitted}</code>
         </div>
       )}
     </div>
