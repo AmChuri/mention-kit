@@ -16,10 +16,21 @@
   <a href="https://amchuri.github.io/mention-kit/"><img src="https://img.shields.io/badge/demo-live-d97706" alt="demo" /></a>
 </p>
 
-<!-- To add a demo GIF: record a ~15s screen capture of the editor, save as media/demo.gif, then uncomment:
-<p align="center">
-  <img src="media/demo.gif" alt="mention-kit demo" width="600" />
-</p>
+---
+
+## See it in action
+
+**▶ [Live demo](https://amchuri.github.io/mention-kit/)** — interactive React + Vue examples: multiple triggers, async search, creatable tags, hovercards, themes, and a rendered preview of each submitted comment.
+
+<!--
+  DEMO MEDIA (drop-in — recorded GIFs render here once added; nothing breaks until then).
+  Record ~8–12s clips against the live demo (e.g. with Kap / LICEcap / QuickTime), 640px wide,
+  save under media/, and uncomment the matching line:
+
+  ![Overview](media/demo.gif)
+  ![Multiple triggers + creatable tags](media/triggers.gif)
+  ![Async / commands](media/async.gif)
+  ![Hovercards + themes](media/hovercards.gif)
 -->
 
 ---
@@ -31,13 +42,15 @@
 - **React** — `<MentionInput />` component and `useMentionEditor()` hook
 - **Vue 3** — `<MentionInput />` component and `useMentionEditor()` composable
 - **Headless** — renders a plain `<div>`, style with Tailwind / MUI / shadcn / anything
-- **Keyboard-first** — `@` to open, `↑↓` to navigate, `Enter`/`Tab` to select, `Escape` to close
-- **Simple callbacks** — `onSubmit` gives you `text` directly, plus `nodes` and `mentionedUsers` in `meta`
-- **Multiple triggers** — `@` people, `#` tags, `/` commands, `:` emoji — each with its own data, colors, and filter
+- **Multiple triggers** — `@` people, `#` tags, `/` commands, `:` emoji, each with its own data, colors, and filter; tags render as label pills, people as avatars
 - **Async suggestions** — fetch results from a server as you type (debounced, with a loading state)
-- **Hover user-info cards** — hover a mention in a rendered comment to reveal the avatar, meta, and copyable fields
-- **Themeable** — `--mk-*` CSS variables (with light/dark presets) or a `theme` object; per-user colors or a shared palette
-- **Persistence format** — `@{userId}` tokens for easy storage and re-render
+- **Creatable items** — offer a "Create …" row so users can add a new `#tag` on the fly
+- **Slash commands** — a trigger can run an action (insert text, open a dialog) instead of inserting a chip
+- **Hover user-info cards** — hover a mention to reveal avatar, meta, and copyable fields
+- **Themeable** — `--mk-*` CSS variables (light/dark presets) or a `theme` object; per-user or shared palette
+- **Controlled or uncontrolled** — drive it with a `value` prop, or leave it self-managed
+- **Accessible** — ARIA combobox semantics (`aria-expanded` / `aria-controls` / `aria-activedescendant`), keyboard-first
+- **Persistence format** — `@{userId}` / `#{tagId}` tokens for easy storage and re-render
 
 ---
 

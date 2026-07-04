@@ -317,6 +317,39 @@ describe('creatable items', () => {
   });
 });
 
+// ─── Label styling (trigger-aware chips) ────────────────────────────────────────
+
+describe('label styling', () => {
+  it('renders non-@ chips as label pills (trigger prefix, no avatar)', () => {
+    const { editor, editable } = createEditor([{ trigger: '#', items: TAGS }]);
+    type(editable, '#');
+    fireKeydown(editable, 'Enter'); // inserts "bug"
+    const chip = editable.querySelector('[data-mention-id]') as HTMLElement;
+    const leading = chip.querySelector('[aria-hidden="true"]') as HTMLElement;
+    expect(leading.textContent).toBe('#'); // trigger prefix, not initials
+    expect(chip.getAttribute('data-mention-trigger')).toBe('#');
+    editor.destroy();
+  });
+
+  it('keeps @ chips avatar-style (initials)', () => {
+    const { editor, editable } = createEditor([{ trigger: '@', items: USERS }]);
+    type(editable, '@');
+    fireKeydown(editable, 'Enter'); // Alice
+    const chip = editable.querySelector('[data-mention-id]') as HTMLElement;
+    const leading = chip.querySelector('[aria-hidden="true"]') as HTMLElement;
+    expect(leading.textContent).toBe('A'); // initials
+    editor.destroy();
+  });
+
+  it('renders label chips in HTML with a prefix and no avatar circle', () => {
+    const html = renderCommentMessageToHTML('a #{t1}', USERS, undefined, [
+      { trigger: '#', items: TAGS },
+    ]);
+    expect(html).toContain('>#</span>'); // trigger prefix
+    expect(html).not.toContain('border-radius:50%'); // no avatar circle
+  });
+});
+
 // ─── Persistence & render round-trips ───────────────────────────────────────────
 
 describe('multi-trigger persistence', () => {

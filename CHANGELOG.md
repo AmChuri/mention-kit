@@ -10,7 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Creatable items** — a trigger can set `allowCreate: true` (and optionally `onCreate(query)` / `createLabel(query)`) to offer a "Create …" row when the typed query matches no existing item. Selecting it mints a new mention chip on the fly — e.g. create a brand-new `#tag`. `onCreate` builds the item (custom id/color); the default is `{ id: query, name: query }`.
-- 3 new tests (162 total).
+
+### Changed
+
+- **Label-style chips for non-`@` triggers** — chips are now trigger-aware. `@` mentions keep their round avatar (person), while `#`/`/`/`:` render as a label pill with a subtle trigger-char prefix (e.g. `# bug`) and no avatar — so tags read as tags, not people. Applies to the editor and to `renderCommentMessage` / `renderCommentMessageToHTML`. `@` output is unchanged.
+- 6 new tests (165 total).
 
 ### Docs
 
