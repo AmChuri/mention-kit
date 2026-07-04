@@ -52,6 +52,37 @@ function CommentBox() {
 // <div ref={editor.containerRef}
 //   className="rounded-md border border-input px-3 py-2 text-sm" />`;
 
+export const HOVERCARD_SNIPPET = `\
+import { useState } from 'react';
+import { RenderedMessage } from '@cursortag/mention-kit/react';
+
+const users = [
+  {
+    id: 'u1', name: 'Alice Johnson', meta: 'Staff Engineer',
+    email: 'alice@acme.com',
+    details: [
+      { label: 'Team',  value: 'Platform' },
+      { label: 'Slack', value: '@alice', href: 'https://slack.com' },
+    ],
+  },
+  // …
+];
+
+function Comment({ stored }: { stored: string }) {
+  const [dark, setDark] = useState(false);
+
+  // Hover a mention → card with avatar, meta, and copyable fields.
+  // Theme with a preset, a { chipBg, cardBg, … } object, or plain --mk-* CSS.
+  return (
+    <RenderedMessage
+      message={stored}
+      users={users}
+      hovercard
+      theme={dark ? { preset: 'dark' } : { preset: 'light' }}
+    />
+  );
+}`;
+
 export const VUE_COMPONENT_SNIPPET = `\
 <script setup lang="ts">
 import { ref } from 'vue';

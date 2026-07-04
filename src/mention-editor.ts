@@ -38,7 +38,22 @@
  * | `Delete`      | Same as Backspace but forward                   |
  */
 
+import { applyTheme, type MentionTheme } from './theme';
+
 // ─── Public types ─────────────────────────────────────────────────────────────
+
+/**
+ * A single extra info row shown in the hover user-info card.
+ * @see attachHovercards
+ */
+export interface MentionUserDetail {
+  label: string;
+  value: string;
+  /** Show a copy button for this row. Default true. */
+  copyable?: boolean;
+  /** Render `value` as a link (only `http(s):`, `mailto:`, `tel:` are honored). */
+  href?: string;
+}
 
 export interface MentionUser {
   id: string;
@@ -46,6 +61,10 @@ export interface MentionUser {
   avatar?: string;
   meta?: string;
   color?: string;
+  /** Convenience email — shown as a copyable row in the hovercard. */
+  email?: string;
+  /** Arbitrary extra rows shown in the hovercard. */
+  details?: MentionUserDetail[];
   [key: string]: unknown;
 }
 
@@ -81,6 +100,11 @@ export interface MentionEditorOptions {
   >;
   renderUser?: (user: MentionUser, selected: boolean) => HTMLElement;
   palette?: string[];
+  /**
+   * Theme applied to the editor container as `--mk-*` CSS variables — chips
+   * inherit them. Equivalent to setting the vars in your own CSS.
+   */
+  theme?: MentionTheme;
 }
 
 export interface MentionEditorInstance {
@@ -188,8 +212,8 @@ export const DEFAULT_MENTION_PALETTE = [
   '#2563eb',
 ];
 
-/** @internal */
-const deriveColor = (
+/** @internal Exported for internal reuse (hovercard); not part of the public API. */
+export const deriveColor = (
   id: string,
   palette: string[] = DEFAULT_MENTION_PALETTE,
 ): string => {
@@ -197,8 +221,8 @@ const deriveColor = (
   return palette[hash % palette.length] ?? DEFAULT_MENTION_PALETTE[0]!;
 };
 
-/** @internal */
-const safeCSSColor = (
+/** @internal Exported for internal reuse (hovercard); not part of the public API. */
+export const safeCSSColor = (
   color: string | undefined,
   id: string,
   palette: string[] = DEFAULT_MENTION_PALETTE,
@@ -301,8 +325,11 @@ export const renderCommentMessageToHTML = (
           .toUpperCase(),
       );
       return [
-        `<span style="display:inline-flex;align-items:center;gap:4px;color:${color};`,
-        `background:${color}18;border-radius:5px;padding:1px 6px;font-weight:600;`,
+        `<span class="mk-chip" data-mention-id="${escapeHTML(id)}" `,
+        `style="display:inline-flex;align-items:center;gap:4px;`,
+        `color:var(--mk-chip-text,${color});`,
+        `background:var(--mk-chip-bg,${color}18);`,
+        `border-radius:var(--mk-chip-radius,5px);padding:1px 6px;font-weight:600;`,
         `white-space:nowrap;font-size:0.92em;vertical-align:middle">`,
         `<span aria-hidden="true" style="width:16px;height:16px;border-radius:50%;`,
         `background:${color};color:#fff;display:inline-flex;align-items:center;`,
@@ -315,14 +342,16 @@ export const renderCommentMessageToHTML = (
 
 // ─── DOM attribute keys ───────────────────────────────────────────────────────
 
-const A_ID = 'data-mention-id';
+/** @internal Data-attribute key carrying the user id on a rendered chip. */
+export const A_ID = 'data-mention-id';
 const A_NAME = 'data-mention-name';
 const A_DISPLAY = 'data-mention-display';
 const A_COLOR = 'data-mention-color';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const initials = (name: string): string =>
+/** @internal Exported for internal reuse (hovercard); not part of the public API. */
+export const initials = (name: string): string =>
   name
     .split(' ')
     .map((p) => p[0])
@@ -344,6 +373,7 @@ const buildChip = (
     ? safeCSSColor(user.color, user.id, palette)
     : deriveColor(user.id, palette);
   const chip = document.createElement('span');
+  chip.className = 'mk-chip';
   chip.setAttribute(A_ID, user.id);
   chip.setAttribute(A_NAME, user.name);
   chip.setAttribute(A_DISPLAY, displayName);
@@ -353,9 +383,9 @@ const buildChip = (
     'display:inline-flex',
     'align-items:center',
     'gap:4px',
-    `color:${c}`,
-    `background:${c}18`,
-    'border-radius:5px',
+    `color:var(--mk-chip-text,${c})`,
+    `background:var(--mk-chip-bg,${c}18)`,
+    'border-radius:var(--mk-chip-radius,5px)',
     'padding:1px 6px',
     'font-weight:600',
     'cursor:default',
@@ -991,9 +1021,12 @@ export const createMentionEditor = (
     popoverPosition,
     renderUser,
     palette = DEFAULT_MENTION_PALETTE,
+    theme,
   } = opts;
 
   const getUsers = (): MentionUser[] => opts.users;
+
+  if (theme) applyTheme(container, theme);
 
   // ── DOM ───────────────────────────────────────────────────────────────────────
 
