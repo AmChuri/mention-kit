@@ -71,9 +71,7 @@ function onChange(text: string) {
     </p>
 
     <!-- Live text -->
-    <p v-if="liveText" class="live">
-      <strong>Live:</strong> {{ liveText }}
-    </p>
+    <p v-if="liveText" class="live"><strong>Live:</strong> {{ liveText }}</p>
 
     <!-- Submitted output -->
     <div v-if="submittedText" class="output">
@@ -82,11 +80,15 @@ function onChange(text: string) {
       <table>
         <tr>
           <td>text</td>
-          <td><code>{{ submittedText }}</code></td>
+          <td>
+            <code>{{ submittedText }}</code>
+          </td>
         </tr>
         <tr>
           <td>markdown</td>
-          <td><code>{{ serializeToMarkdown(submittedNodes) }}</code></td>
+          <td>
+            <code>{{ serializeToMarkdown(submittedNodes) }}</code>
+          </td>
         </tr>
       </table>
 

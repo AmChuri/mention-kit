@@ -40,8 +40,10 @@ const liveText = ref('');
 // Reactive computed users — the getter in useMentionEditor always reads the
 // latest value, so swapping this list is picked up with no re-mount.
 const visibleUsers = computed<MentionUser[]>(() => {
-  if (teamFilter.value === 'eng') return ALL_USERS.filter((u) => u.meta === 'Engineering');
-  if (teamFilter.value === 'design') return ALL_USERS.filter((u) => u.meta === 'Design');
+  if (teamFilter.value === 'eng')
+    return ALL_USERS.filter((u) => u.meta === 'Engineering');
+  if (teamFilter.value === 'design')
+    return ALL_USERS.filter((u) => u.meta === 'Design');
   return ALL_USERS;
 });
 
