@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Slash-command actions** — a trigger can set `onSelect(item, ctx)` to run a callback instead of inserting a chip. The typed trigger text is removed first; `ctx.insertText(text)` inserts content at the caret. Great for `/` commands (assign, due date, insert snippet). New `TriggerActionContext` type.
 - **Controlled `value`** — React/Vue `<MentionInput>` and the hook/composable accept a `value` prop (persisted `@{id}` string). The editor re-seeds only when `value` changes to something other than its current content (pair with `onChange` + `serializeToPersist`), so typing keeps its caret.
 - **Combobox accessibility** — the editable now exposes `aria-autocomplete="list"` and toggles `aria-expanded`, `aria-controls`, and `aria-activedescendant` as the suggestion list opens / navigates / closes; the listbox and each option carry stable ids.
-- 3 new tests (156 total).
+- 6 new tests (159 total), including React-render coverage for controlled `value`.
 
 ## [0.3.0] - 2026-07-04
 

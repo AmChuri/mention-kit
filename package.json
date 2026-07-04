@@ -87,6 +87,7 @@
     ]
   },
   "devDependencies": {
+    "@testing-library/dom": "^10",
     "@testing-library/react": "^16.3.2",
     "@testing-library/vue": "^8.1.0",
     "@types/node": "^22.0.0",
@@ -96,7 +97,8 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.8.2",
-    "react": "^19.2.5",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
     "vitest": "^2.0.0",
