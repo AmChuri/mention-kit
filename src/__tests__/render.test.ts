@@ -79,6 +79,12 @@ describe('renderCommentMessageToHTML', () => {
     expect(result).toContain('Alice Johnson');
   });
 
+  it('tags mention spans with data-mention-id so hovercards can attach', () => {
+    const result = renderCommentMessageToHTML('hi @{u1}', ALL_USERS);
+    expect(result).toContain('data-mention-id="u1"');
+    expect(result).toContain('class="mk-chip"');
+  });
+
   it('returns empty string for empty input', () => {
     expect(renderCommentMessageToHTML('', ALL_USERS)).toBe('');
   });

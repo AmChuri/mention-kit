@@ -33,7 +33,8 @@
 - **Headless** — renders a plain `<div>`, style with Tailwind / MUI / shadcn / anything
 - **Keyboard-first** — `@` to open, `↑↓` to navigate, `Enter`/`Tab` to select, `Escape` to close
 - **Simple callbacks** — `onSubmit` gives you `text` directly, plus `nodes` and `mentionedUsers` in `meta`
-- **Custom palettes** — per-user colors or a shared palette
+- **Hover user-info cards** — hover a mention in a rendered comment to reveal the avatar, meta, and copyable fields
+- **Themeable** — `--mk-*` CSS variables (with light/dark presets) or a `theme` object; per-user colors or a shared palette
 - **Persistence format** — `@{userId}` tokens for easy storage and re-render
 
 ---
@@ -511,18 +512,160 @@ const users = [{ id: 'u1', name: 'Alice', color: '#7c3aed' }];
 
 ---
 
+## Hover user-info cards
+
+Reveal a rich profile card when a reader hovers a mention in a **rendered
+message** — avatar, meta, and any extra fields, each optionally copyable.
+
+Give users the info you want to surface:
+
+```ts
+const users = [
+  {
+    id: 'u1',
+    name: 'Alice Johnson',
+    meta: 'Staff Engineer',
+    avatar: 'https://…/alice.png',
+    email: 'alice@acme.com', // shown as a copyable row
+    details: [
+      { label: 'Team', value: 'Platform' },
+      { label: 'Slack', value: '@alice', href: 'https://acme.slack.com/…' },
+    ],
+  },
+];
+```
+
+**React** — just add the `hovercard` prop to `<RenderedMessage />`:
+
+```tsx
+import { RenderedMessage } from '@cursortag/mention-kit/react';
+
+<RenderedMessage message={stored} users={users} hovercard />
+
+// Configure copy behavior, delays, or a fully custom card body:
+<RenderedMessage
+  message={stored}
+  users={users}
+  hovercard={{ copyFields: true, copyUser: (u) => `${u.name} <${u.email}>` }}
+/>
+```
+
+**Vanilla / Vue** — render the message, then wire cards onto the container. It
+returns a cleanup function; call it on unmount.
+
+```ts
+import { renderCommentMessage, attachHovercards } from '@cursortag/mention-kit';
+
+renderCommentMessage(stored, users).forEach((part) =>
+  container.append(
+    typeof part === 'string' ? document.createTextNode(part) : part,
+  ),
+);
+
+const cleanup = attachHovercards(container, users, {
+  openDelay: 180, // ms before the card opens
+  closeDelay: 140, // ms before it closes
+  copyFields: true, // per-row copy buttons (default true)
+  copyUser: true, // "copy user" button (default true)
+});
+
+// later: cleanup();
+```
+
+`attachHovercards` works on the output of `renderCommentMessageToHTML` too — the
+mention spans carry `data-mention-id`, so you can inject the HTML and attach
+cards afterwards. Copy buttons use `navigator.clipboard` and no-op where it is
+unavailable.
+
+| Option       | Type                          | Default | Description                        |
+| ------------ | ----------------------------- | ------- | ---------------------------------- |
+| `openDelay`  | `number`                      | `180`   | ms before the card opens on hover  |
+| `closeDelay` | `number`                      | `140`   | ms before the card closes on leave |
+| `copyFields` | `boolean`                     | `true`  | Copy button on each field row      |
+| `copyUser`   | `boolean \| (user) => string` | `true`  | "Copy user" button + its text      |
+| `render`     | `(user) => HTMLElement`       | —       | Replace the entire card body       |
+| `theme`      | `MentionTheme`                | —       | Theme applied to the card          |
+| `className`  | `string`                      | —       | Extra class appended to the card   |
+
+---
+
+## Theming
+
+Chips and hovercards read their styling from `--mk-*` CSS custom properties. The
+library's built-in look is the `var()` fallback, so the default appearance is
+unchanged and per-user colors still win — you only override what you want.
+
+**Option A — plain CSS.** Set the variables on any ancestor (chips) or on
+`.mk-hovercard` (the floating card):
+
+```css
+.comments {
+  --mk-chip-bg: #eef2ff;
+  --mk-chip-text: #4338ca;
+  --mk-chip-radius: 6px;
+}
+.mk-hovercard {
+  --mk-card-bg: #0b1220;
+  --mk-card-text: #e2e8f0;
+  --mk-card-border: #1e293b;
+  --mk-accent: #60a5fa;
+}
+```
+
+**Option B — a `theme` object** (React `<RenderedMessage>` / `<MentionInput>`,
+Vue props, or `createMentionEditor`). A `light` / `dark` preset seeds the card;
+any explicit key overrides it:
+
+```tsx
+<RenderedMessage
+  message={stored}
+  users={users}
+  hovercard
+  theme={{ preset: 'dark' }}
+/>;
+
+createMentionEditor({
+  container,
+  users,
+  theme: { chipBg: '#eef2ff', chipRadius: 6 },
+});
+```
+
+| Theme key    | CSS variable       | Applies to           |
+| ------------ | ------------------ | -------------------- |
+| `preset`     | (seeds card vars)  | `'light'` / `'dark'` |
+| `chipBg`     | `--mk-chip-bg`     | chip background      |
+| `chipText`   | `--mk-chip-text`   | chip text            |
+| `chipRadius` | `--mk-chip-radius` | chip corners         |
+| `cardBg`     | `--mk-card-bg`     | card background      |
+| `cardText`   | `--mk-card-text`   | card text            |
+| `cardMuted`  | `--mk-card-muted`  | labels / meta        |
+| `cardBorder` | `--mk-card-border` | card border          |
+| `cardShadow` | `--mk-card-shadow` | card shadow          |
+| `cardRadius` | `--mk-card-radius` | card corners         |
+| `accent`     | `--mk-accent`      | copy buttons / links |
+
+`resolveThemeVars(theme)` returns the raw `{ '--mk-*': value }` map and
+`applyTheme(el, theme)` writes it onto an element, if you need to theme a
+container yourself.
+
+---
+
 ## API reference
 
 ### Core (`@cursortag/mention-kit`)
 
-| Export                                             | Description                                  |
-| -------------------------------------------------- | -------------------------------------------- |
-| `createMentionEditor(opts)`                        | Creates a vanilla editor instance            |
-| `serializeToText(nodes)`                           | Nodes to plain text string                   |
-| `serializeToMarkdown(nodes)`                       | Nodes to `@[name](id)` markdown string       |
-| `renderCommentMessage(msg, users, palette?)`       | Stored string to `(string \| HTMLElement)[]` |
-| `renderCommentMessageToHTML(msg, users, palette?)` | Stored string to HTML string                 |
-| `DEFAULT_MENTION_PALETTE`                          | Built-in color array                         |
+| Export                                             | Description                                                        |
+| -------------------------------------------------- | ------------------------------------------------------------------ |
+| `createMentionEditor(opts)`                        | Creates a vanilla editor instance                                  |
+| `serializeToText(nodes)`                           | Nodes to plain text string                                         |
+| `serializeToMarkdown(nodes)`                       | Nodes to `@[name](id)` markdown string                             |
+| `renderCommentMessage(msg, users, palette?)`       | Stored string to `(string \| HTMLElement)[]`                       |
+| `renderCommentMessageToHTML(msg, users, palette?)` | Stored string to HTML string                                       |
+| `attachHovercards(root, users, opts?)`             | Wire hover user-info cards onto rendered mentions; returns cleanup |
+| `resolveThemeVars(theme)`                          | Theme object to `{ '--mk-*': value }` map                          |
+| `applyTheme(el, theme)`                            | Write theme vars onto an element                                   |
+| `DEFAULT_MENTION_PALETTE`                          | Built-in color array                                               |
 
 ### Types
 
@@ -531,9 +674,18 @@ interface MentionUser {
   id: string;
   name: string;
   avatar?: string; // URL — shown in chip avatar
-  meta?: string; // Subtitle shown in dropdown
+  meta?: string; // Subtitle shown in dropdown + hovercard
   color?: string; // CSS color — overrides palette
+  email?: string; // Copyable row in the hovercard
+  details?: MentionUserDetail[]; // Extra hovercard rows
   [key: string]: unknown;
+}
+
+interface MentionUserDetail {
+  label: string;
+  value: string;
+  copyable?: boolean; // default true
+  href?: string; // renders value as a link (http(s)/mailto/tel)
 }
 
 type TextNode = { type: 'text'; text: string };

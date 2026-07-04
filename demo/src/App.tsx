@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { ReactComponentDemo } from './demos/ReactComponentDemo';
 import { ReactHookDemo } from './demos/ReactHookDemo';
+import { HovercardDemo } from './demos/HovercardDemo';
 import { VueComponentDemo } from './demos/VueComponentDemo';
 import { VueComposableDemo } from './demos/VueComposableDemo';
 import {
   REACT_COMPONENT_SNIPPET,
   REACT_HOOK_SNIPPET,
+  HOVERCARD_SNIPPET,
   VUE_COMPONENT_SNIPPET,
   VUE_COMPOSABLE_SNIPPET,
 } from './snippets';
@@ -77,6 +79,7 @@ function DemoSection({
 const SECTIONS = [
   { id: 'react-component', label: 'React · Component' },
   { id: 'react-hook', label: 'React · Hook' },
+  { id: 'hovercard', label: 'Hovercards + Themes' },
   { id: 'vue-component', label: 'Vue · Component' },
   { id: 'vue-composable', label: 'Vue · Composable' },
 ] as const;
@@ -192,6 +195,16 @@ export function App() {
             description="Attach containerRef to any element — a plain div, a MUI Box, a shadcn wrapper — the library takes over its contents."
             demo={<ReactHookDemo />}
             snippet={REACT_HOOK_SNIPPET}
+          />
+
+          <DemoSection
+            id="hovercard"
+            badge="React"
+            badgeColor="blue"
+            title="Hover cards + custom themes"
+            description="Render a stored comment and hover a mention to reveal a profile card — avatar, meta, and copyable fields. Toggle the light/dark theme; chips and cards restyle via --mk-* CSS variables."
+            demo={<HovercardDemo />}
+            snippet={HOVERCARD_SNIPPET}
           />
 
           <DemoSection

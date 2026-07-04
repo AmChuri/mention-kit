@@ -114,7 +114,8 @@ describe('chip rendering', () => {
     editor.setNodes([mention(alice)]); // alice has color: '#7c3aed'
     const chip = editable.querySelector('[data-mention-id]') as HTMLElement;
     expect(chip.getAttribute('data-mention-color')).toBe('#7c3aed');
-    expect(chip.style.color).toBe('#7c3aed');
+    // Color is now themeable — the user color is the var() fallback.
+    expect(chip.style.color).toBe('var(--mk-chip-text,#7c3aed)');
     editor.destroy();
   });
 

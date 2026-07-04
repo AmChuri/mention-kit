@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-07-04
+
+### Added
+
+- **Hover user-info cards** — `attachHovercards(root, users, opts?)` wires a floating profile card onto every rendered mention (`renderCommentMessage` / `renderCommentMessageToHTML` output). The card shows a large avatar, name, `meta`, the new `email` row, and any `details[]` rows. Returns a cleanup function.
+- **Copy actions** — each info row gets a click-to-copy button (`copyFields`, default on) and the card has a "copy user" button that copies a formatted summary (`copyUser`, default on; pass a function for custom text). Uses `navigator.clipboard` and no-ops where unavailable.
+- **`<RenderedMessage hovercard theme={…} />`** (React) — add the `hovercard` prop (`boolean | HovercardOptions`) to enable cards, and `theme` to restyle chips + card. Cards attach/clean up automatically with the component lifecycle.
+- **Custom themes** — chip and card styles now read from `--mk-*` CSS variables with the built-in look as the `var()` fallback (default appearance unchanged). Override via plain CSS, or pass a `theme` object (with `light` / `dark` presets) to `createMentionEditor`, React/Vue `MentionInput`, or `RenderedMessage`. New helpers `resolveThemeVars(theme)` and `applyTheme(el, theme)`.
+- **`MentionUser.email` / `MentionUser.details[]`** and the `MentionUserDetail` type for richer hovercard content.
+- Rendered mention spans (both DOM and HTML output) now carry `data-mention-id` and a `mk-chip` class so hovercards and custom styling can target them.
+- 23 new tests (142 total).
+
 ## [0.1.2] - 2026-04-21
 
 ### Added
@@ -50,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dual CJS + ESM builds with full `.d.ts` types
 - GitHub Pages demo site with live interactive examples
 
+[0.2.0]: https://github.com/amchuri/mention-kit/releases/tag/v0.2.0
 [0.1.2]: https://github.com/amchuri/mention-kit/releases/tag/v0.1.2
 [0.1.1]: https://github.com/amchuri/mention-kit/releases/tag/v0.1.1
 [0.1.0]: https://github.com/amchuri/mention-kit/releases/tag/v0.1.0

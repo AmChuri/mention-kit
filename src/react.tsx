@@ -38,6 +38,8 @@ import {
   type MentionEditorOptions,
   type MentionUser,
 } from './mention-editor';
+import { attachHovercards, type HovercardOptions } from './hovercard';
+import { applyTheme, type MentionTheme } from './theme';
 import { buildEditorOpts } from './_build-opts';
 
 // ─── Re-exports ───────────────────────────────────────────────────────────────
@@ -49,6 +51,7 @@ export type {
   MentionEditorOptions,
   MentionNode,
   MentionUser,
+  MentionUserDetail,
   TextNode,
 } from './mention-editor';
 
@@ -61,6 +64,11 @@ export {
   serializeToPersist,
   serializeToText,
 } from './mention-editor';
+
+export { attachHovercards } from './hovercard';
+export type { HovercardOptions } from './hovercard';
+export { resolveThemeVars, applyTheme } from './theme';
+export type { MentionTheme } from './theme';
 
 // ─── Shared types ─────────────────────────────────────────────────────────────
 
@@ -258,6 +266,13 @@ export interface RenderedMessageProps {
   users: MentionUser[];
   /** Optional custom palette. */
   palette?: string[];
+  /**
+   * Enable hover user-info cards on each mention. Pass `true` for defaults or a
+   * {@link HovercardOptions} object to configure copy buttons, delays, etc.
+   */
+  hovercard?: boolean | HovercardOptions;
+  /** Theme applied to the chips and (when enabled) the hovercard. */
+  theme?: MentionTheme;
   className?: string;
   style?: CSSProperties;
 }
@@ -266,30 +281,43 @@ export interface RenderedMessageProps {
  * Renders a stored `@{userId}` message as a React element with styled
  * mention chips. Replaces `dangerouslySetInnerHTML` with a safe, typed component.
  *
+ * Pass `hovercard` to pop a user-info card (avatar, meta, copyable fields) when
+ * a mention is hovered. Memoize object props (`users`, `hovercard`, `theme`) to
+ * avoid re-attaching on every render.
+ *
  * @example
  * ```tsx
- * <RenderedMessage message="Hey @{u1}!" users={users} />
+ * <RenderedMessage message="Hey @{u1}!" users={users} hovercard theme={{ preset: 'dark' }} />
  * ```
  */
 export function RenderedMessage({
   message,
   users,
   palette,
+  hovercard,
+  theme,
   className,
   style,
 }: RenderedMessageProps) {
   const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    if (!ref.current) return;
-    ref.current.innerHTML = '';
+    const host = ref.current;
+    if (!host) return;
+    host.innerHTML = '';
+    applyTheme(host, theme);
     const parts = renderCommentMessage(message, users, palette);
     for (const part of parts) {
-      ref.current.appendChild(
+      host.appendChild(
         typeof part === 'string' ? document.createTextNode(part) : part,
       );
     }
-  }, [message, users, palette]);
+    if (!hovercard) return;
+    const hcOpts: HovercardOptions =
+      typeof hovercard === 'object' ? { ...hovercard } : {};
+    if (theme !== undefined && hcOpts.theme === undefined) hcOpts.theme = theme;
+    return attachHovercards(host, users, hcOpts);
+  }, [message, users, palette, hovercard, theme]);
 
   return <span ref={ref} className={className} style={style} />;
 }

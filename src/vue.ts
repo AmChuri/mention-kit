@@ -34,6 +34,7 @@ import {
   type MentionEditorOptions,
   type MentionUser,
 } from './mention-editor';
+import type { MentionTheme } from './theme';
 import { buildEditorOpts } from './_build-opts';
 
 // ─── Re-exports ───────────────────────────────────────────────────────────────
@@ -45,6 +46,7 @@ export type {
   MentionEditorOptions,
   MentionNode,
   MentionUser,
+  MentionUserDetail,
   TextNode,
 } from './mention-editor';
 
@@ -57,6 +59,11 @@ export {
   serializeToPersist,
   serializeToText,
 } from './mention-editor';
+
+export { attachHovercards } from './hovercard';
+export type { HovercardOptions } from './hovercard';
+export { resolveThemeVars, applyTheme } from './theme';
+export type { MentionTheme } from './theme';
 
 // ─── Shared types ─────────────────────────────────────────────────────────────
 
@@ -152,6 +159,7 @@ export const MentionInput = defineComponent({
     maxSuggestions: { type: Number, default: undefined },
     disabled: { type: Boolean, default: undefined },
     palette: { type: Array as PropType<string[]>, default: undefined },
+    theme: { type: Object as PropType<MentionTheme>, default: undefined },
     defaultNodes: {
       type: Array as PropType<EditorNode[]>,
       default: undefined,
@@ -189,6 +197,7 @@ export const MentionInput = defineComponent({
         editorOpts.maxSuggestions = props.maxSuggestions;
       if (props.disabled !== undefined) editorOpts.disabled = props.disabled;
       if (props.palette !== undefined) editorOpts.palette = props.palette;
+      if (props.theme !== undefined) editorOpts.theme = props.theme;
 
       const editor = createMentionEditor(editorOpts);
       instanceRef.value = editor;
