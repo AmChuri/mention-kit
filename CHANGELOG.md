@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-07-04
+
+### Added
+
+- **Multiple / custom triggers** — new `triggers` option (`MentionTrigger[]`) lets one editor handle `@` users, `#` tags, `/` commands, `:` emoji, etc. Each trigger has its own `items`, `filter`, `color`, `label`, `renderItem`, `minChars`, and `allowSpaces`. Backward compatible: `users` + `renderUser` are synthesized into the default `@` trigger, so existing setups are unchanged.
+- **Async suggestions** — a trigger's `items` may be `(query) => Promise<MentionItem[]>`. Resolution is debounced (`debounce`, opt-in), shows a loading row, and guards against stale/out-of-order responses. Set `serverFiltered: true` when the source already filtered.
+- **Custom filter** — per-trigger `filter(item, query)` replaces the built-in case-insensitive `name.includes` matcher.
+- **`MentionNode.trigger`** — mentions now record which trigger produced them (absent = `@`). `serializeToText` / `serializeToMarkdown` / `serializeToPersist` emit `<trigger>…` accordingly (e.g. `#{t1}`).
+- **`triggerItems` param** on `parsePersist`, `renderCommentMessage`, and `renderCommentMessageToHTML` (optional, trailing) resolves non-`@` tokens back to items. React `<RenderedMessage>` gains a matching `triggerItems` prop. Rendered spans carry `data-mention-trigger` for non-`@` triggers.
+- New public types: `MentionTrigger`, `MentionItem`, `TriggerItems`. New examples and demo section.
+- 11 new tests (153 total).
+
 ## [0.2.1] - 2026-07-04
 
 ### Docs
@@ -73,6 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dual CJS + ESM builds with full `.d.ts` types
 - GitHub Pages demo site with live interactive examples
 
+[0.3.0]: https://github.com/amchuri/mention-kit/releases/tag/v0.3.0
 [0.2.1]: https://github.com/amchuri/mention-kit/releases/tag/v0.2.1
 [0.2.0]: https://github.com/amchuri/mention-kit/releases/tag/v0.2.0
 [0.1.2]: https://github.com/amchuri/mention-kit/releases/tag/v0.1.2

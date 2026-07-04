@@ -47,6 +47,7 @@ export function buildEditorOpts(
   if (opts.popoverPosition !== undefined)
     result.popoverPosition = opts.popoverPosition;
   if (opts.renderUser !== undefined) result.renderUser = opts.renderUser;
+  if (opts.triggers !== undefined) result.triggers = opts.triggers;
   if (opts.theme !== undefined) result.theme = opts.theme;
   if (opts.onFocus !== undefined) result.onFocus = opts.onFocus;
   if (opts.onBlur !== undefined) result.onBlur = opts.onBlur;

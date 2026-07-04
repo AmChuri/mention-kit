@@ -32,6 +32,7 @@ import {
   type EditorNode,
   type MentionEditorInstance,
   type MentionEditorOptions,
+  type MentionTrigger,
   type MentionUser,
 } from './mention-editor';
 import type { MentionTheme } from './theme';
@@ -44,10 +45,13 @@ export type {
   EditorNode,
   MentionEditorInstance,
   MentionEditorOptions,
+  MentionItem,
   MentionNode,
+  MentionTrigger,
   MentionUser,
   MentionUserDetail,
   TextNode,
+  TriggerItems,
 } from './mention-editor';
 
 export {
@@ -159,6 +163,7 @@ export const MentionInput = defineComponent({
     maxSuggestions: { type: Number, default: undefined },
     disabled: { type: Boolean, default: undefined },
     palette: { type: Array as PropType<string[]>, default: undefined },
+    triggers: { type: Array as PropType<MentionTrigger[]>, default: undefined },
     theme: { type: Object as PropType<MentionTheme>, default: undefined },
     defaultNodes: {
       type: Array as PropType<EditorNode[]>,
@@ -197,6 +202,7 @@ export const MentionInput = defineComponent({
         editorOpts.maxSuggestions = props.maxSuggestions;
       if (props.disabled !== undefined) editorOpts.disabled = props.disabled;
       if (props.palette !== undefined) editorOpts.palette = props.palette;
+      if (props.triggers !== undefined) editorOpts.triggers = props.triggers;
       if (props.theme !== undefined) editorOpts.theme = props.theme;
 
       const editor = createMentionEditor(editorOpts);

@@ -52,6 +52,35 @@ function CommentBox() {
 // <div ref={editor.containerRef}
 //   className="rounded-md border border-input px-3 py-2 text-sm" />`;
 
+export const MULTI_TRIGGER_SNIPPET = `\
+import { MentionInput } from '@cursortag/mention-kit/react';
+
+const people = [{ id: 'u1', name: 'Alice Johnson' }, /* … */];
+const tags   = [{ id: 't1', name: 'bug' }, { id: 't2', name: 'feature' }];
+
+// One editor, three triggers — @ people, # tags, / async commands.
+<MentionInput
+  users={people}
+  placeholder="Try @ people, # tags, or / commands…"
+  triggers={[
+    { trigger: '@', items: people, label: 'Mention someone' },
+    { trigger: '#', items: tags,   label: 'Add a tag' },
+    {
+      trigger: '/',
+      debounce: 200,            // debounce keystrokes
+      serverFiltered: true,     // results already filtered server-side
+      items: async (query) => {
+        const res = await fetch(\`/api/commands?q=\${query}\`);
+        return res.json();      // MentionItem[]
+      },
+    },
+  ]}
+  onSubmit={(text) => save(text)}   // "Fix @Alice's #bug"
+/>;
+
+// Stored as tokens: "Fix @{u1}'s #{t1}" — re-render with triggerItems:
+// renderCommentMessage(stored, people, palette, [{ trigger: '#', items: tags }])`;
+
 export const HOVERCARD_SNIPPET = `\
 import { useState } from 'react';
 import { RenderedMessage } from '@cursortag/mention-kit/react';

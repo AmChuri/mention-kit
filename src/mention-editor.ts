@@ -68,11 +68,50 @@ export interface MentionUser {
   [key: string]: unknown;
 }
 
+/** An item a trigger can suggest — same shape as {@link MentionUser}. */
+export type MentionItem = MentionUser;
+
+/**
+ * A trigger that opens a suggestion dropdown. The default `@` trigger is
+ * synthesized from the `users` option, so existing setups need no `triggers`.
+ */
+export interface MentionTrigger {
+  /** Single trigger character, e.g. `'@'`, `'#'`, `'/'`, `':'`. */
+  trigger: string;
+  /**
+   * Suggestion source. Either a static array, or a function of the current
+   * query that returns items synchronously or as a `Promise` (async search).
+   */
+  items:
+    | MentionItem[]
+    | ((query: string) => MentionItem[] | Promise<MentionItem[]>);
+  /** Custom matcher. Default: case-insensitive `name.includes(query)`. */
+  filter?: (item: MentionItem, query: string) => boolean;
+  /** `items()` already filtered (server-side) — skip local filtering. */
+  serverFiltered?: boolean;
+  /** Debounce for async `items()`, in ms. Default `0` (fire immediately). */
+  debounce?: number;
+  /** Minimum query length before the dropdown opens. Default `0`. */
+  minChars?: number;
+  /** Allow spaces inside the query. Default `false`. */
+  allowSpaces?: boolean;
+  /** Max suggestions shown. Defaults to the top-level `maxSuggestions`. */
+  maxSuggestions?: number;
+  /** Default chip color for mentions from this trigger. */
+  color?: string;
+  /** Dropdown header label. */
+  label?: string;
+  /** Custom dropdown row renderer for this trigger. */
+  renderItem?: (item: MentionItem, selected: boolean) => HTMLElement;
+}
+
 export type TextNode = { type: 'text'; text: string };
 export type MentionNode = {
   type: 'mention';
   user: MentionUser;
   displayName: string;
+  /** Trigger character that produced this mention. Absent means `'@'`. */
+  trigger?: string;
 };
 export type EditorNode = TextNode | MentionNode;
 
@@ -87,7 +126,16 @@ export interface EditorCallbackMeta {
 
 export interface MentionEditorOptions {
   container: HTMLElement;
+  /**
+   * Users for the default `@` trigger. Shorthand for a single-trigger setup;
+   * ignored when `triggers` is provided.
+   */
   get users(): MentionUser[];
+  /**
+   * Multiple / custom triggers (`@`, `#`, `/`, `:`, …). When set, this fully
+   * replaces the default `@`+`users` trigger.
+   */
+  triggers?: MentionTrigger[];
   placeholder?: string;
   maxSuggestions?: number;
   disabled?: boolean;
@@ -126,7 +174,9 @@ const buildCallbackArgs = (
   nodes: EditorNode[],
 ): [string, EditorCallbackMeta] => {
   const text = nodes
-    .map((n) => (n.type === 'text' ? n.text : `@${n.displayName}`))
+    .map((n) =>
+      n.type === 'text' ? n.text : `${n.trigger ?? '@'}${n.displayName}`,
+    )
     .join('');
   const seen = new Set<string>();
   const mentionedUsers: MentionUser[] = [];
@@ -148,42 +198,83 @@ const buildCallbackArgs = (
 
 // ─── Serialisation helpers ────────────────────────────────────────────────────
 
+/** Item lists keyed by trigger char, for parsing/rendering multi-trigger content. */
+export interface TriggerItems {
+  trigger: string;
+  items: MentionItem[];
+}
+
+/** @internal Escapes a char for safe use inside a `[...]` regex character class. */
+const escapeForCharClass = (c: string): string =>
+  c.replace(/[\\\]^-]/g, '\\$&');
+
+/** @internal Builds the set of trigger chars for parsing (`@` + any extras). */
+const triggerCharClass = (triggerItems?: TriggerItems[]): string =>
+  ['@', ...(triggerItems?.map((t) => t.trigger) ?? [])]
+    .map(escapeForCharClass)
+    .join('');
+
 export const serializeToText = (nodes: EditorNode[]): string =>
-  nodes.map((n) => (n.type === 'text' ? n.text : `@${n.displayName}`)).join('');
+  nodes
+    .map((n) =>
+      n.type === 'text' ? n.text : `${n.trigger ?? '@'}${n.displayName}`,
+    )
+    .join('');
 
 export const serializeToMarkdown = (nodes: EditorNode[]): string =>
   nodes
     .map((n) =>
-      n.type === 'text' ? n.text : `@[${n.displayName}](${n.user.id})`,
+      n.type === 'text'
+        ? n.text
+        : `${n.trigger ?? '@'}[${n.displayName}](${n.user.id})`,
     )
     .join('');
 
 /**
  * Serialises editor nodes into the `@{userId}` token format consumed by
  * `renderCommentMessage`, `renderCommentMessageToHTML`, and `parsePersist`.
+ * Non-`@` triggers serialise as `<trigger>{id}` (e.g. `#{t1}`).
  * This is the recommended format for database storage.
  */
 export const serializeToPersist = (nodes: EditorNode[]): string =>
-  nodes.map((n) => (n.type === 'text' ? n.text : `@{${n.user.id}}`)).join('');
+  nodes
+    .map((n) =>
+      n.type === 'text' ? n.text : `${n.trigger ?? '@'}{${n.user.id}}`,
+    )
+    .join('');
 
 /**
- * Parses a persisted `@{userId}` string back into `EditorNode[]`.
- * Users not found in the supplied list render as "Unknown User".
+ * Parses a persisted token string back into `EditorNode[]`.
+ * Resolves `@{id}` against `users`; pass `triggerItems` to also resolve other
+ * triggers (e.g. `#{id}`). Unresolved ids render as "Unknown User".
  */
 export const parsePersist = (
   raw: string,
   users: MentionUser[],
+  triggerItems?: TriggerItems[],
 ): EditorNode[] => {
+  const cls = triggerCharClass(triggerItems);
+  const splitRe = new RegExp(`([${cls}]\\{[^}]+\\})`, 'g');
+  const tokenRe = new RegExp(`^([${cls}])\\{(.+)\\}$`);
+  const resolve = (ch: string, id: string): MentionUser | undefined =>
+    ch === '@'
+      ? users.find((u) => u.id === id)
+      : triggerItems
+          ?.find((t) => t.trigger === ch)
+          ?.items.find((u) => u.id === id);
+
   const nodes: EditorNode[] = [];
-  for (const part of raw.split(/(@\{[^}]+\})/g)) {
-    const match = part.match(/^@\{(.+)\}$/);
+  for (const part of raw.split(splitRe)) {
+    const match = part.match(tokenRe);
     if (match) {
-      const id = match[1]!;
-      const user = users.find((u) => u.id === id);
+      const ch = match[1]!;
+      const id = match[2]!;
+      const user = resolve(ch, id);
       nodes.push({
         type: 'mention',
         user: user ?? { id, name: 'Unknown User' },
         displayName: user?.name ?? 'Unknown User',
+        ...(ch !== '@' ? { trigger: ch } : {}),
       });
     } else if (part) {
       nodes.push({ type: 'text', text: part });
@@ -286,36 +377,62 @@ const toRgba = (color: string, alpha: number): string => {
   }
 };
 
+/** @internal Resolves a token's item across `@` (users) and other triggers. */
+const resolveToken = (
+  ch: string,
+  id: string,
+  users: MentionUser[],
+  triggerItems?: TriggerItems[],
+): MentionUser | undefined =>
+  ch === '@'
+    ? users.find((u) => u.id === id)
+    : triggerItems
+        ?.find((t) => t.trigger === ch)
+        ?.items.find((u) => u.id === id);
+
 export const renderCommentMessage = (
   message: string,
   users: MentionUser[],
   palette: string[] = DEFAULT_MENTION_PALETTE,
-): (string | HTMLElement)[] =>
-  message.split(/(@\{[^}]+\})/g).map((part) => {
-    const m = part.match(/^@\{(.+)\}$/);
+  triggerItems?: TriggerItems[],
+): (string | HTMLElement)[] => {
+  const cls = triggerCharClass(triggerItems);
+  const splitRe = new RegExp(`([${cls}]\\{[^}]+\\})`, 'g');
+  const tokenRe = new RegExp(`^([${cls}])\\{(.+)\\}$`);
+  return message.split(splitRe).map((part) => {
+    const m = part.match(tokenRe);
     if (!m) return part;
-    const id = m[1]!;
-    const user = users.find((u) => u.id === id);
+    const ch = m[1]!;
+    const id = m[2]!;
+    const user = resolveToken(ch, id, users, triggerItems);
     const name = user?.name ?? 'Unknown User';
     const color = safeCSSColor(user?.color, id, palette);
-    return buildChip({ id, name, color }, name, palette);
+    return buildChip({ id, name, color }, name, palette, ch);
   });
+};
 
 export const renderCommentMessageToHTML = (
   message: string,
   users: MentionUser[],
   palette: string[] = DEFAULT_MENTION_PALETTE,
-): string =>
-  message
-    .split(/(@\{[^}]+\})/g)
+  triggerItems?: TriggerItems[],
+): string => {
+  const cls = triggerCharClass(triggerItems);
+  const splitRe = new RegExp(`([${cls}]\\{[^}]+\\})`, 'g');
+  const tokenRe = new RegExp(`^([${cls}])\\{(.+)\\}$`);
+  return message
+    .split(splitRe)
     .map((part) => {
-      const m = part.match(/^@\{(.+)\}$/);
+      const m = part.match(tokenRe);
       if (!m) return escapeHTML(part).replace(/\n/g, '<br>');
-      const id = m[1]!;
-      const user = users.find((u) => u.id === id);
+      const ch = m[1]!;
+      const id = m[2]!;
+      const user = resolveToken(ch, id, users, triggerItems);
       const name = user?.name ?? 'Unknown User';
       const color = safeCSSColor(user?.color, id, palette);
       const safeName = escapeHTML(name);
+      const triggerAttr =
+        ch !== '@' ? ` data-mention-trigger="${escapeHTML(ch)}"` : '';
       const av = escapeHTML(
         name
           .split(' ')
@@ -325,7 +442,7 @@ export const renderCommentMessageToHTML = (
           .toUpperCase(),
       );
       return [
-        `<span class="mk-chip" data-mention-id="${escapeHTML(id)}" `,
+        `<span class="mk-chip" data-mention-id="${escapeHTML(id)}"${triggerAttr} `,
         `style="display:inline-flex;align-items:center;gap:4px;`,
         `color:var(--mk-chip-text,${color});`,
         `background:var(--mk-chip-bg,${color}18);`,
@@ -339,6 +456,7 @@ export const renderCommentMessageToHTML = (
       ].join('');
     })
     .join('');
+};
 
 // ─── DOM attribute keys ───────────────────────────────────────────────────────
 
@@ -347,6 +465,7 @@ export const A_ID = 'data-mention-id';
 const A_NAME = 'data-mention-name';
 const A_DISPLAY = 'data-mention-display';
 const A_COLOR = 'data-mention-color';
+const A_TRIGGER = 'data-mention-trigger';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -368,6 +487,7 @@ const buildChip = (
   user: MentionUser,
   displayName: string,
   palette: string[] = DEFAULT_MENTION_PALETTE,
+  trigger: string = '@',
 ): HTMLElement => {
   const c = user.color
     ? safeCSSColor(user.color, user.id, palette)
@@ -378,6 +498,7 @@ const buildChip = (
   chip.setAttribute(A_NAME, user.name);
   chip.setAttribute(A_DISPLAY, displayName);
   chip.setAttribute(A_COLOR, c);
+  if (trigger !== '@') chip.setAttribute(A_TRIGGER, trigger);
   chip.contentEditable = 'false';
   chip.style.cssText = [
     'display:inline-flex',
@@ -477,6 +598,7 @@ const domToNodes = (
       const t = child.textContent ?? '';
       if (t) nodes.push({ type: 'text', text: t });
     } else if (isChip(child)) {
+      const trigger = child.getAttribute(A_TRIGGER);
       nodes.push({
         type: 'mention',
         user: {
@@ -487,6 +609,7 @@ const domToNodes = (
             deriveColor(child.getAttribute(A_ID) ?? '', palette),
         },
         displayName: child.getAttribute(A_DISPLAY) ?? '',
+        ...(trigger && trigger !== '@' ? { trigger } : {}),
       });
     } else if (child.nodeType !== Node.COMMENT_NODE) {
       const t = (child as HTMLElement).textContent ?? '';
@@ -506,7 +629,7 @@ const nodesToDom = (
     container.appendChild(
       n.type === 'text'
         ? document.createTextNode(n.text)
-        : buildChip(n.user, n.displayName, palette),
+        : buildChip(n.user, n.displayName, palette, n.trigger),
     ),
   );
 };
@@ -858,17 +981,37 @@ const handleSelectionDeletion = (
 
 // ─── Dropdown ─────────────────────────────────────────────────────────────────
 
+/** @internal Fully-resolved trigger config used inside the editor. */
+interface ResolvedTrigger {
+  trigger: string;
+  items: (query: string) => MentionItem[] | Promise<MentionItem[]>;
+  filter: (item: MentionItem, query: string) => boolean;
+  serverFiltered: boolean;
+  debounce: number;
+  minChars: number;
+  allowSpaces: boolean;
+  maxSuggestions: number;
+  color: string | undefined;
+  label: string;
+  renderItem:
+    | ((item: MentionItem, selected: boolean) => HTMLElement)
+    | undefined;
+}
+
 interface DropdownState {
   el: HTMLElement;
-  update: (query: string, selected: number, anchorRect: DOMRect) => void;
+  update: (
+    items: MentionItem[],
+    selected: number,
+    anchorRect: DOMRect,
+    loading: boolean,
+    trig: ResolvedTrigger,
+  ) => void;
   destroy: () => void;
 }
 
 const createDropdown = (
-  getUsers: () => MentionUser[],
-  maxSuggestions: number,
-  onSelect: (user: MentionUser) => void,
-  renderUser?: (user: MentionUser, selected: boolean) => HTMLElement,
+  onSelect: (item: MentionItem) => void,
   posOverride?: MentionEditorOptions['popoverPosition'],
 ): DropdownState => {
   const el = document.createElement('div');
@@ -876,10 +1019,10 @@ const createDropdown = (
   el.style.cssText = [
     'position:fixed',
     'z-index:9999',
-    'background:#fff',
-    'border:1px solid #e2e8f0',
-    'border-radius:10px',
-    'box-shadow:0 10px 25px rgba(0,0,0,0.12),0 4px 10px rgba(0,0,0,0.06)',
+    'background:var(--mk-card-bg,#fff)',
+    'border:1px solid var(--mk-card-border,#e2e8f0)',
+    'border-radius:var(--mk-card-radius,10px)',
+    'box-shadow:var(--mk-card-shadow,0 10px 25px rgba(0,0,0,0.12),0 4px 10px rgba(0,0,0,0.06))',
     'min-width:230px',
     'max-width:320px',
     'max-height:260px',
@@ -891,14 +1034,25 @@ const createDropdown = (
 
   const header = document.createElement('div');
   header.style.cssText =
-    'padding:4px 12px 6px;font-size:11px;color:#94a3b8;font-weight:600;' +
+    'padding:4px 12px 6px;font-size:11px;color:var(--mk-card-muted,#94a3b8);font-weight:600;' +
     'letter-spacing:0.05em;text-transform:uppercase;';
-  header.textContent = 'Mention someone';
   el.appendChild(header);
 
-  const buildItem = (user: MentionUser, active: boolean): HTMLElement => {
-    if (renderUser) return renderUser(user, active);
-    const c = user.color ?? '#1976d2';
+  const message = (txt: string): HTMLElement => {
+    const d = document.createElement('div');
+    d.style.cssText =
+      'padding:8px 12px;font-size:13px;color:var(--mk-card-muted,#94a3b8);';
+    d.textContent = txt;
+    return d;
+  };
+
+  const buildItem = (
+    user: MentionItem,
+    active: boolean,
+    trig: ResolvedTrigger,
+  ): HTMLElement => {
+    if (trig.renderItem) return trig.renderItem(user, active);
+    const c = user.color ?? trig.color ?? '#1976d2';
     const item = document.createElement('div');
     item.setAttribute('role', 'option');
     item.setAttribute('aria-selected', String(active));
@@ -953,34 +1107,12 @@ const createDropdown = (
     return item;
   };
 
-  const update = (
-    query: string,
-    selected: number,
-    anchorRect: DOMRect,
-  ): void => {
-    const filtered = getUsers()
-      .filter((u) => u.name.toLowerCase().includes(query.toLowerCase()))
-      .slice(0, maxSuggestions);
-
-    while (el.children.length > 1) el.removeChild(el.lastChild!);
-    if (!filtered.length) {
-      el.style.visibility = 'hidden';
-      return;
-    }
-
-    filtered.forEach((user, i) =>
-      el.appendChild(buildItem(user, i === selected)),
-    );
-    (el.children[selected + 1] as HTMLElement)?.scrollIntoView({
-      block: 'nearest',
-    });
-
+  const position = (anchorRect: DOMRect): void => {
     if (posOverride) {
       Object.assign(el.style, posOverride);
       el.style.visibility = 'visible';
       return;
     }
-
     el.style.visibility = 'hidden';
     el.style.display = 'block';
     const popH = el.offsetHeight || 240;
@@ -996,6 +1128,33 @@ const createDropdown = (
       el.style.top = `${anchorRect.bottom + 4}px`;
     }
     el.style.visibility = 'visible';
+  };
+
+  const update = (
+    items: MentionItem[],
+    selected: number,
+    anchorRect: DOMRect,
+    loading: boolean,
+    trig: ResolvedTrigger,
+  ): void => {
+    header.textContent = trig.label;
+    while (el.children.length > 1) el.removeChild(el.lastChild!);
+
+    if (!items.length && !loading) {
+      el.style.visibility = 'hidden';
+      return;
+    }
+    if (loading && !items.length) {
+      el.appendChild(message('Loading…'));
+    } else {
+      items.forEach((item, i) =>
+        el.appendChild(buildItem(item, i === selected, trig)),
+      );
+      (el.children[selected + 1] as HTMLElement)?.scrollIntoView({
+        block: 'nearest',
+      });
+    }
+    position(anchorRect);
   };
 
   const destroy = (): void => {
@@ -1024,7 +1183,41 @@ export const createMentionEditor = (
     theme,
   } = opts;
 
-  const getUsers = (): MentionUser[] => opts.users;
+  // ── Trigger normalization ─────────────────────────────────────────────────────
+
+  const defaultFilter = (item: MentionItem, q: string): boolean =>
+    item.name.toLowerCase().includes(q.toLowerCase());
+
+  const normalizeTrigger = (t: MentionTrigger): ResolvedTrigger => ({
+    trigger: t.trigger,
+    items: Array.isArray(t.items) ? () => t.items as MentionItem[] : t.items,
+    filter: t.filter ?? defaultFilter,
+    serverFiltered: t.serverFiltered ?? false,
+    debounce: t.debounce ?? 0,
+    minChars: t.minChars ?? 0,
+    allowSpaces: t.allowSpaces ?? false,
+    maxSuggestions: t.maxSuggestions ?? maxSuggestions,
+    color: t.color,
+    label:
+      t.label ??
+      (t.trigger === '@' ? 'Mention someone' : `Insert ${t.trigger}`),
+    renderItem: t.renderItem,
+  });
+
+  // Legacy: `users` + optional `renderUser` become the default `@` trigger.
+  const triggers: ResolvedTrigger[] = (
+    opts.triggers ?? [
+      {
+        trigger: '@',
+        items: () => opts.users,
+        ...(renderUser ? { renderItem: renderUser } : {}),
+      },
+    ]
+  ).map(normalizeTrigger);
+
+  const triggerChars = new Set(triggers.map((t) => t.trigger));
+  const triggerFor = (ch: string): ResolvedTrigger | undefined =>
+    triggers.find((t) => t.trigger === ch);
 
   if (theme) applyTheme(container, theme);
 
@@ -1067,6 +1260,10 @@ export const createMentionEditor = (
   let mentionStart: number = -1;
   let selectedIndex: number = 0;
   let dropdown: DropdownState | null = null;
+  let activeTrigger: ResolvedTrigger | null = null;
+  let currentItems: MentionItem[] = [];
+  let reqSeq = 0;
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
   // ── Placeholder ───────────────────────────────────────────────────────────────
 
@@ -1117,17 +1314,80 @@ export const createMentionEditor = (
 
   // ── Dropdown ──────────────────────────────────────────────────────────────────
 
-  const openDropdown = (query: string, anchorRect: DOMRect): void => {
-    if (!dropdown) {
-      dropdown = createDropdown(
-        getUsers,
-        maxSuggestions,
-        selectUser,
-        renderUser,
-        popoverPosition,
+  const showItems = (
+    items: MentionItem[],
+    anchorRect: DOMRect,
+    loading: boolean,
+  ): void => {
+    if (!dropdown || !activeTrigger) return;
+    currentItems = items;
+    if (selectedIndex >= items.length)
+      selectedIndex = Math.max(0, items.length - 1);
+    dropdown.update(items, selectedIndex, anchorRect, loading, activeTrigger);
+  };
+
+  const runResolve = (
+    trig: ResolvedTrigger,
+    query: string,
+    anchorRect: DOMRect,
+  ): void => {
+    const raw = trig.items(query);
+    const isPromise =
+      !!raw && typeof (raw as PromiseLike<MentionItem[]>).then === 'function';
+    const finalize = (list: MentionItem[]): MentionItem[] =>
+      (trig.serverFiltered
+        ? list
+        : list.filter((it) => trig.filter(it, query))
+      ).slice(0, trig.maxSuggestions);
+
+    if (isPromise) {
+      const seq = ++reqSeq;
+      showItems([], anchorRect, true); // loading state
+      Promise.resolve(raw as Promise<MentionItem[]>).then(
+        (list) => {
+          if (seq !== reqSeq || activeTrigger !== trig) return; // stale
+          showItems(finalize(list ?? []), anchorRect, false);
+        },
+        () => {
+          if (seq === reqSeq && activeTrigger === trig)
+            showItems([], anchorRect, false);
+        },
       );
+    } else {
+      reqSeq++; // invalidate any in-flight async
+      showItems(finalize(raw as MentionItem[]), anchorRect, false);
     }
-    dropdown.update(query, selectedIndex, anchorRect);
+  };
+
+  const resolveSuggestions = (
+    trig: ResolvedTrigger,
+    query: string,
+    anchorRect: DOMRect,
+  ): void => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      debounceTimer = undefined;
+    }
+    if (trig.debounce > 0) {
+      debounceTimer = setTimeout(
+        () => runResolve(trig, query, anchorRect),
+        trig.debounce,
+      );
+    } else {
+      runResolve(trig, query, anchorRect);
+    }
+  };
+
+  const openDropdown = (query: string, anchorRect: DOMRect): void => {
+    if (!dropdown) dropdown = createDropdown(selectItem, popoverPosition);
+    if (activeTrigger) resolveSuggestions(activeTrigger, query, anchorRect);
+  };
+
+  const refreshDropdown = (): void => {
+    if (!dropdown || !activeTrigger) return;
+    const rect = getCaretRect();
+    if (rect)
+      dropdown.update(currentItems, selectedIndex, rect, false, activeTrigger);
   };
 
   const closeDropdown = (): void => {
@@ -1135,14 +1395,25 @@ export const createMentionEditor = (
     dropdown = null;
     mentionQuery = null;
     selectedIndex = 0;
+    activeTrigger = null;
+    currentItems = [];
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      debounceTimer = undefined;
+    }
+    reqSeq++; // invalidate in-flight async
   };
 
-  // ── Select user ───────────────────────────────────────────────────────────────
+  // ── Select item ───────────────────────────────────────────────────────────────
 
-  const selectUser = (user: MentionUser): void => {
+  const selectItem = (item: MentionItem): void => {
+    const trig = activeTrigger;
+    if (!trig) return;
     const nodes = domToNodes(editable, palette);
     const endOffset = mentionStart + 1 + (mentionQuery?.length ?? 0);
-    const fullUser = getUsers().find((u) => u.id === user.id) ?? user;
+    // Apply the trigger's default color when the item has none of its own.
+    const chipUser: MentionItem =
+      item.color || !trig.color ? item : { ...item, color: trig.color };
 
     let charCount = 0,
       tni = -1,
@@ -1180,8 +1451,9 @@ export const createMentionEditor = (
         insertedAt = newNodes.length;
         newNodes.push({
           type: 'mention',
-          user: fullUser,
-          displayName: fullUser.name,
+          user: chipUser,
+          displayName: chipUser.name,
+          ...(trig.trigger !== '@' ? { trigger: trig.trigger } : {}),
         });
         newNodes.push({ type: 'text', text: ' ' + after });
       }
@@ -1224,21 +1496,34 @@ export const createMentionEditor = (
     const flat = nodes
       .map((n) => (n.type === 'text' ? n.text : '\x00'))
       .join('');
+
+    // Scan back to the nearest trigger char, stopping at a newline / chip.
     let triggerOffset = -1;
+    let triggerChar = '';
     for (let i = caret - 1; i >= 0; i--) {
-      if (flat[i] === '@') {
+      const ch = flat[i]!;
+      if (ch === '\n' || ch === '\x00') break;
+      if (triggerChars.has(ch)) {
         triggerOffset = i;
+        triggerChar = ch;
         break;
       }
-      if (flat[i] === ' ' || flat[i] === '\n' || flat[i] === '\x00') break;
     }
 
-    if (triggerOffset >= 0) {
+    const trig = triggerOffset >= 0 ? triggerFor(triggerChar) : undefined;
+    const query = trig ? flat.slice(triggerOffset + 1, caret) : '';
+    const valid =
+      !!trig &&
+      (trig.allowSpaces || !/\s/.test(query)) &&
+      query.length >= trig.minChars;
+
+    if (trig && valid) {
+      activeTrigger = trig;
       mentionStart = triggerOffset;
-      mentionQuery = flat.slice(triggerOffset + 1, caret);
+      mentionQuery = query;
       selectedIndex = 0;
       const rect = getCaretRect();
-      if (rect) openDropdown(mentionQuery, rect);
+      if (rect) openDropdown(query, rect);
     } else {
       closeDropdown();
     }
@@ -1247,31 +1532,23 @@ export const createMentionEditor = (
   // ── Keydown ───────────────────────────────────────────────────────────────────
 
   const onKeyDown = (e: KeyboardEvent): void => {
-    // Dropdown navigation
-    if (mentionQuery !== null && dropdown) {
-      const filtered = getUsers()
-        .filter((u) =>
-          u.name.toLowerCase().includes(mentionQuery!.toLowerCase()),
-        )
-        .slice(0, maxSuggestions);
-
+    // Dropdown navigation — over the currently displayed (possibly async) items
+    if (mentionQuery !== null && dropdown && activeTrigger) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        selectedIndex = Math.min(selectedIndex + 1, filtered.length - 1);
-        const rect = getCaretRect();
-        if (rect) dropdown.update(mentionQuery!, selectedIndex, rect);
+        selectedIndex = Math.min(selectedIndex + 1, currentItems.length - 1);
+        refreshDropdown();
         return;
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault();
         selectedIndex = Math.max(selectedIndex - 1, 0);
-        const rect = getCaretRect();
-        if (rect) dropdown.update(mentionQuery!, selectedIndex, rect);
+        refreshDropdown();
         return;
       }
-      if ((e.key === 'Enter' || e.key === 'Tab') && filtered.length) {
+      if ((e.key === 'Enter' || e.key === 'Tab') && currentItems.length) {
         e.preventDefault();
-        selectUser(filtered[selectedIndex]!);
+        selectItem(currentItems[selectedIndex]!);
         return;
       }
       if (e.key === 'Escape') {

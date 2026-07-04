@@ -37,6 +37,7 @@ import {
   type MentionEditorInstance,
   type MentionEditorOptions,
   type MentionUser,
+  type TriggerItems,
 } from './mention-editor';
 import { attachHovercards, type HovercardOptions } from './hovercard';
 import { applyTheme, type MentionTheme } from './theme';
@@ -49,10 +50,13 @@ export type {
   EditorNode,
   MentionEditorInstance,
   MentionEditorOptions,
+  MentionItem,
   MentionNode,
+  MentionTrigger,
   MentionUser,
   MentionUserDetail,
   TextNode,
+  TriggerItems,
 } from './mention-editor';
 
 export {
@@ -267,6 +271,11 @@ export interface RenderedMessageProps {
   /** Optional custom palette. */
   palette?: string[];
   /**
+   * Item lists for non-`@` triggers, so tokens like `#{id}` resolve to names.
+   * The `@` trigger resolves from `users`.
+   */
+  triggerItems?: TriggerItems[];
+  /**
    * Enable hover user-info cards on each mention. Pass `true` for defaults or a
    * {@link HovercardOptions} object to configure copy buttons, delays, etc.
    */
@@ -294,6 +303,7 @@ export function RenderedMessage({
   message,
   users,
   palette,
+  triggerItems,
   hovercard,
   theme,
   className,
@@ -306,7 +316,7 @@ export function RenderedMessage({
     if (!host) return;
     host.innerHTML = '';
     applyTheme(host, theme);
-    const parts = renderCommentMessage(message, users, palette);
+    const parts = renderCommentMessage(message, users, palette, triggerItems);
     for (const part of parts) {
       host.appendChild(
         typeof part === 'string' ? document.createTextNode(part) : part,
@@ -316,8 +326,13 @@ export function RenderedMessage({
     const hcOpts: HovercardOptions =
       typeof hovercard === 'object' ? { ...hovercard } : {};
     if (theme !== undefined && hcOpts.theme === undefined) hcOpts.theme = theme;
-    return attachHovercards(host, users, hcOpts);
-  }, [message, users, palette, hovercard, theme]);
+    // Resolve hovercards across all triggers, not just `@`.
+    const allItems = [
+      ...users,
+      ...(triggerItems?.flatMap((t) => t.items) ?? []),
+    ];
+    return attachHovercards(host, allItems, hcOpts);
+  }, [message, users, palette, triggerItems, hovercard, theme]);
 
   return <span ref={ref} className={className} style={style} />;
 }

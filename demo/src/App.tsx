@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { ReactComponentDemo } from './demos/ReactComponentDemo';
 import { ReactHookDemo } from './demos/ReactHookDemo';
+import { MultiTriggerDemo } from './demos/MultiTriggerDemo';
 import { HovercardDemo } from './demos/HovercardDemo';
 import { VueComponentDemo } from './demos/VueComponentDemo';
 import { VueComposableDemo } from './demos/VueComposableDemo';
 import {
   REACT_COMPONENT_SNIPPET,
   REACT_HOOK_SNIPPET,
+  MULTI_TRIGGER_SNIPPET,
   HOVERCARD_SNIPPET,
   VUE_COMPONENT_SNIPPET,
   VUE_COMPOSABLE_SNIPPET,
@@ -79,6 +81,7 @@ function DemoSection({
 const SECTIONS = [
   { id: 'react-component', label: 'React · Component' },
   { id: 'react-hook', label: 'React · Hook' },
+  { id: 'multi-trigger', label: 'Multiple Triggers' },
   { id: 'hovercard', label: 'Hovercards + Themes' },
   { id: 'vue-component', label: 'Vue · Component' },
   { id: 'vue-composable', label: 'Vue · Composable' },
@@ -195,6 +198,16 @@ export function App() {
             description="Attach containerRef to any element — a plain div, a MUI Box, a shadcn wrapper — the library takes over its contents."
             demo={<ReactHookDemo />}
             snippet={REACT_HOOK_SNIPPET}
+          />
+
+          <DemoSection
+            id="multi-trigger"
+            badge="React"
+            badgeColor="blue"
+            title="Multiple triggers + async"
+            description="One editor handling @ people, # tags, and / commands. The command trigger fetches suggestions asynchronously (debounced, with a loading state). Each trigger has its own data, colors, and label."
+            demo={<MultiTriggerDemo />}
+            snippet={MULTI_TRIGGER_SNIPPET}
           />
 
           <DemoSection
