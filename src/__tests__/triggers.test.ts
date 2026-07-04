@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   createMentionEditor,
   serializeToPersist,
+  serializeToText,
   parsePersist,
   renderCommentMessageToHTML,
   type MentionItem,
@@ -207,6 +208,69 @@ describe('async items', () => {
 
     expect(listbox()!.textContent).toContain('NEW');
     expect(listbox()!.textContent).not.toContain('OLD');
+    editor.destroy();
+  });
+});
+
+// ─── Slash-command actions (#4) ─────────────────────────────────────────────────
+
+describe('slash-command actions', () => {
+  it('runs onSelect instead of inserting a chip and removes the trigger text', () => {
+    const onSelect = vi.fn();
+    const { editor, editable } = createEditor([
+      { trigger: '/', items: [{ id: 'c1', name: 'archive' }], onSelect },
+    ]);
+    type(editable, '/arch');
+    fireKeydown(editable, 'Enter');
+
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect.mock.calls[0]![0]).toMatchObject({
+      id: 'c1',
+      name: 'archive',
+    });
+    // No chip; the "/arch" text is gone.
+    expect(editor.getNodes().some((n) => n.type === 'mention')).toBe(false);
+    expect(serializeToText(editor.getNodes())).not.toContain('/');
+    editor.destroy();
+  });
+
+  it('ctx.insertText inserts text where the trigger was', () => {
+    const { editor, editable } = createEditor([
+      {
+        trigger: '/',
+        items: [{ id: 'c1', name: 'date' }],
+        onSelect: (_item, ctx) => ctx.insertText('2026-07-04'),
+      },
+    ]);
+    type(editable, '/date');
+    fireKeydown(editable, 'Enter');
+    expect(serializeToText(editor.getNodes())).toContain('2026-07-04');
+    editor.destroy();
+  });
+});
+
+// ─── Combobox a11y (#6) ─────────────────────────────────────────────────────────
+
+describe('combobox a11y', () => {
+  it('exposes aria-autocomplete and toggles expanded/controls/activedescendant', () => {
+    const { editor, editable } = createEditor([{ trigger: '@', items: USERS }]);
+    expect(editable.getAttribute('aria-autocomplete')).toBe('list');
+    expect(editable.getAttribute('aria-expanded')).toBe('false');
+
+    type(editable, '@');
+    expect(editable.getAttribute('aria-expanded')).toBe('true');
+    const id = listbox()!.id;
+    expect(editable.getAttribute('aria-controls')).toBe(id);
+    expect(editable.getAttribute('aria-activedescendant')).toBe(`${id}-opt-0`);
+    expect(document.getElementById(`${id}-opt-0`)).toBeTruthy();
+
+    fireKeydown(editable, 'ArrowDown');
+    expect(editable.getAttribute('aria-activedescendant')).toBe(`${id}-opt-1`);
+
+    fireKeydown(editable, 'Escape');
+    expect(editable.getAttribute('aria-expanded')).toBe('false');
+    expect(editable.hasAttribute('aria-controls')).toBe(false);
+    expect(editable.hasAttribute('aria-activedescendant')).toBe(false);
     editor.destroy();
   });
 });

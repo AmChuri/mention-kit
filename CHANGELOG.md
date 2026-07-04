@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-07-04
+
+### Added
+
+- **Slash-command actions** — a trigger can set `onSelect(item, ctx)` to run a callback instead of inserting a chip. The typed trigger text is removed first; `ctx.insertText(text)` inserts content at the caret. Great for `/` commands (assign, due date, insert snippet). New `TriggerActionContext` type.
+- **Controlled `value`** — React/Vue `<MentionInput>` and the hook/composable accept a `value` prop (persisted `@{id}` string). The editor re-seeds only when `value` changes to something other than its current content (pair with `onChange` + `serializeToPersist`), so typing keeps its caret.
+- **Combobox accessibility** — the editable now exposes `aria-autocomplete="list"` and toggles `aria-expanded`, `aria-controls`, and `aria-activedescendant` as the suggestion list opens / navigates / closes; the listbox and each option carry stable ids.
+- 3 new tests (156 total).
+
 ## [0.3.0] - 2026-07-04
 
 ### Added
@@ -85,6 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dual CJS + ESM builds with full `.d.ts` types
 - GitHub Pages demo site with live interactive examples
 
+[0.4.0]: https://github.com/amchuri/mention-kit/releases/tag/v0.4.0
 [0.3.0]: https://github.com/amchuri/mention-kit/releases/tag/v0.3.0
 [0.2.1]: https://github.com/amchuri/mention-kit/releases/tag/v0.2.1
 [0.2.0]: https://github.com/amchuri/mention-kit/releases/tag/v0.2.0

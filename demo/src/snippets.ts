@@ -73,6 +73,8 @@ const tags   = [{ id: 't1', name: 'bug' }, { id: 't2', name: 'feature' }];
         const res = await fetch(\`/api/commands?q=\${query}\`);
         return res.json();      // MentionItem[]
       },
+      // Slash-command: run an action instead of inserting a chip.
+      onSelect: (item, ctx) => ctx.insertText(\`[\${item.name}] \`),
     },
   ]}
   onSubmit={(text) => save(text)}   // "Fix @Alice's #bug"

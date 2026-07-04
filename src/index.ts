@@ -15,6 +15,7 @@ export type {
   MentionUserDetail,
   MentionItem,
   MentionTrigger,
+  TriggerActionContext,
   TriggerItems,
   EditorNode,
   EditorCallbackMeta,

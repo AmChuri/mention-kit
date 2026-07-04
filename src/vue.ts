@@ -28,15 +28,28 @@ import {
 import {
   createMentionEditor,
   parsePersist,
+  serializeToPersist,
   type EditorCallbackMeta,
   type EditorNode,
   type MentionEditorInstance,
   type MentionEditorOptions,
+  type MentionItem,
   type MentionTrigger,
   type MentionUser,
+  type TriggerItems,
 } from './mention-editor';
 import type { MentionTheme } from './theme';
 import { buildEditorOpts } from './_build-opts';
+
+/** @internal Static item lists for non-`@` triggers, for parsing a controlled value. */
+function deriveTriggerItems(
+  triggers?: MentionTrigger[],
+): TriggerItems[] | undefined {
+  const arr = triggers
+    ?.filter((t) => t.trigger !== '@' && Array.isArray(t.items))
+    .map((t) => ({ trigger: t.trigger, items: t.items as MentionItem[] }));
+  return arr && arr.length ? arr : undefined;
+}
 
 // ─── Re-exports ───────────────────────────────────────────────────────────────
 
@@ -51,6 +64,7 @@ export type {
   MentionUser,
   MentionUserDetail,
   TextNode,
+  TriggerActionContext,
   TriggerItems,
 } from './mention-editor';
 
@@ -75,6 +89,8 @@ export type MentionBindingOptions = Omit<MentionEditorOptions, 'container'> & {
   defaultNodes?: EditorNode[];
   /** Initial content as a persisted `@{userId}` string. */
   defaultValue?: string;
+  /** Controlled persisted value (`@{id}` token string); re-syncs on change. */
+  value?: string;
 };
 
 // ─── useMentionEditor ─────────────────────────────────────────────────────────
@@ -112,7 +128,11 @@ export function useMentionEditor(
 
     instanceRef.value = editor;
 
-    if (opts.defaultNodes?.length) {
+    if (opts.value !== undefined) {
+      editor.setNodes(
+        parsePersist(opts.value, opts.users, deriveTriggerItems(opts.triggers)),
+      );
+    } else if (opts.defaultNodes?.length) {
       editor.setNodes(opts.defaultNodes);
     } else if (opts.defaultValue) {
       editor.setNodes(parsePersist(opts.defaultValue, opts.users));
@@ -135,6 +155,20 @@ export function useMentionEditor(
     () => opts.disabled,
     (d) => {
       instanceRef.value?.setDisabled(!!d);
+    },
+  );
+
+  // Controlled value — re-seed only on genuine external changes.
+  watch(
+    () => opts.value,
+    (v) => {
+      const inst = instanceRef.value;
+      if (!inst || v === undefined) return;
+      if (serializeToPersist(inst.getNodes()) !== v) {
+        inst.setNodes(
+          parsePersist(v, opts.users, deriveTriggerItems(opts.triggers)),
+        );
+      }
     },
   );
 
@@ -170,6 +204,7 @@ export const MentionInput = defineComponent({
       default: undefined,
     },
     defaultValue: { type: String, default: undefined },
+    value: { type: String, default: undefined },
   },
 
   emits: {
@@ -208,7 +243,15 @@ export const MentionInput = defineComponent({
       const editor = createMentionEditor(editorOpts);
       instanceRef.value = editor;
 
-      if (props.defaultNodes?.length) {
+      if (props.value !== undefined) {
+        editor.setNodes(
+          parsePersist(
+            props.value,
+            props.users,
+            deriveTriggerItems(props.triggers),
+          ),
+        );
+      } else if (props.defaultNodes?.length) {
         editor.setNodes(props.defaultNodes);
       } else if (props.defaultValue) {
         editor.setNodes(parsePersist(props.defaultValue, props.users));
@@ -231,6 +274,20 @@ export const MentionInput = defineComponent({
       () => props.disabled,
       (d) => {
         if (d !== undefined) instanceRef.value?.setDisabled(d);
+      },
+    );
+
+    // Controlled value — re-seed only on genuine external changes.
+    watch(
+      () => props.value,
+      (v) => {
+        const inst = instanceRef.value;
+        if (!inst || v === undefined) return;
+        if (serializeToPersist(inst.getNodes()) !== v) {
+          inst.setNodes(
+            parsePersist(v, props.users, deriveTriggerItems(props.triggers)),
+          );
+        }
       },
     );
 

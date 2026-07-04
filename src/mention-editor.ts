@@ -71,6 +71,14 @@ export interface MentionUser {
 /** An item a trigger can suggest — same shape as {@link MentionUser}. */
 export type MentionItem = MentionUser;
 
+/** Helpers passed to a trigger's `onSelect` (slash-command) handler. */
+export interface TriggerActionContext {
+  /** The trigger character that fired (`'/'`, etc.). */
+  trigger: string;
+  /** Insert plain text at the caret (where the trigger text was removed). */
+  insertText: (text: string) => void;
+}
+
 /**
  * A trigger that opens a suggestion dropdown. The default `@` trigger is
  * synthesized from the `users` option, so existing setups need no `triggers`.
@@ -103,6 +111,12 @@ export interface MentionTrigger {
   label?: string;
   /** Custom dropdown row renderer for this trigger. */
   renderItem?: (item: MentionItem, selected: boolean) => HTMLElement;
+  /**
+   * Slash-command mode: when set, selecting an item runs this callback instead
+   * of inserting a chip. The typed trigger text is removed first; use
+   * `ctx.insertText` to insert your own content.
+   */
+  onSelect?: (item: MentionItem, ctx: TriggerActionContext) => void;
 }
 
 export type TextNode = { type: 'text'; text: string };
@@ -996,6 +1010,9 @@ interface ResolvedTrigger {
   renderItem:
     | ((item: MentionItem, selected: boolean) => HTMLElement)
     | undefined;
+  onSelect:
+    | ((item: MentionItem, ctx: TriggerActionContext) => void)
+    | undefined;
 }
 
 interface DropdownState {
@@ -1010,12 +1027,15 @@ interface DropdownState {
   destroy: () => void;
 }
 
+let dropdownSeq = 0;
+
 const createDropdown = (
   onSelect: (item: MentionItem) => void,
   posOverride?: MentionEditorOptions['popoverPosition'],
 ): DropdownState => {
   const el = document.createElement('div');
   el.setAttribute('role', 'listbox');
+  el.id = `mk-listbox-${++dropdownSeq}`;
   el.style.cssText = [
     'position:fixed',
     'z-index:9999',
@@ -1147,9 +1167,11 @@ const createDropdown = (
     if (loading && !items.length) {
       el.appendChild(message('Loading…'));
     } else {
-      items.forEach((item, i) =>
-        el.appendChild(buildItem(item, i === selected, trig)),
-      );
+      items.forEach((item, i) => {
+        const node = buildItem(item, i === selected, trig);
+        node.id = `${el.id}-opt-${i}`; // for aria-activedescendant
+        el.appendChild(node);
+      });
       (el.children[selected + 1] as HTMLElement)?.scrollIntoView({
         block: 'nearest',
       });
@@ -1202,6 +1224,7 @@ export const createMentionEditor = (
       t.label ??
       (t.trigger === '@' ? 'Mention someone' : `Insert ${t.trigger}`),
     renderItem: t.renderItem,
+    onSelect: t.onSelect,
   });
 
   // Legacy: `users` + optional `renderUser` become the default `@` trigger.
@@ -1244,6 +1267,8 @@ export const createMentionEditor = (
   editable.setAttribute('role', 'textbox');
   editable.setAttribute('aria-multiline', 'true');
   editable.setAttribute('aria-label', placeholder);
+  editable.setAttribute('aria-autocomplete', 'list');
+  editable.setAttribute('aria-expanded', 'false');
   editable.style.cssText = [
     'outline:none',
     'min-height:1.4em',
@@ -1314,6 +1339,25 @@ export const createMentionEditor = (
 
   // ── Dropdown ──────────────────────────────────────────────────────────────────
 
+  /** Syncs the combobox ARIA state on the editable to the dropdown. */
+  const setCombobox = (open: boolean): void => {
+    editable.setAttribute('aria-expanded', String(open));
+    if (open && dropdown) {
+      editable.setAttribute('aria-controls', dropdown.el.id);
+      if (currentItems.length) {
+        editable.setAttribute(
+          'aria-activedescendant',
+          `${dropdown.el.id}-opt-${selectedIndex}`,
+        );
+      } else {
+        editable.removeAttribute('aria-activedescendant');
+      }
+    } else {
+      editable.removeAttribute('aria-controls');
+      editable.removeAttribute('aria-activedescendant');
+    }
+  };
+
   const showItems = (
     items: MentionItem[],
     anchorRect: DOMRect,
@@ -1324,6 +1368,7 @@ export const createMentionEditor = (
     if (selectedIndex >= items.length)
       selectedIndex = Math.max(0, items.length - 1);
     dropdown.update(items, selectedIndex, anchorRect, loading, activeTrigger);
+    setCombobox(true);
   };
 
   const runResolve = (
@@ -1388,6 +1433,7 @@ export const createMentionEditor = (
     const rect = getCaretRect();
     if (rect)
       dropdown.update(currentItems, selectedIndex, rect, false, activeTrigger);
+    setCombobox(true);
   };
 
   const closeDropdown = (): void => {
@@ -1402,9 +1448,33 @@ export const createMentionEditor = (
       debounceTimer = undefined;
     }
     reqSeq++; // invalidate in-flight async
+    setCombobox(false);
   };
 
   // ── Select item ───────────────────────────────────────────────────────────────
+
+  /** Inserts plain text at the caret, then re-normalizes + emits change. */
+  const insertTextAtCaret = (text: string): void => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      const tn = document.createTextNode(text);
+      range.insertNode(tn);
+      range.setStartAfter(tn);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } else {
+      editable.appendChild(document.createTextNode(text));
+    }
+    const caret = getCaretOffset(editable);
+    const nodes = domToNodes(editable, palette);
+    nodesToDom(editable, nodes, palette);
+    setCaretOffset(editable, caret);
+    onChange?.(...buildCallbackArgs(nodes));
+    updatePlaceholder();
+  };
 
   const selectItem = (item: MentionItem): void => {
     const trig = activeTrigger;
@@ -1447,20 +1517,39 @@ export const createMentionEditor = (
         const tn = nodes[ni] as TextNode;
         const before = tn.text.slice(0, tci);
         const after = ni === eni ? tn.text.slice(eci) : '';
-        if (before) newNodes.push({ type: 'text', text: before });
-        insertedAt = newNodes.length;
-        newNodes.push({
-          type: 'mention',
-          user: chipUser,
-          displayName: chipUser.name,
-          ...(trig.trigger !== '@' ? { trigger: trig.trigger } : {}),
-        });
-        newNodes.push({ type: 'text', text: ' ' + after });
+        if (trig.onSelect) {
+          // Slash-command: drop the trigger text, keep surrounding text.
+          const merged = before + after;
+          if (merged) newNodes.push({ type: 'text', text: merged });
+        } else {
+          if (before) newNodes.push({ type: 'text', text: before });
+          insertedAt = newNodes.length;
+          newNodes.push({
+            type: 'mention',
+            user: chipUser,
+            displayName: chipUser.name,
+            ...(trig.trigger !== '@' ? { trigger: trig.trigger } : {}),
+          });
+          newNodes.push({ type: 'text', text: ' ' + after });
+        }
       }
     }
 
     nodesToDom(editable, newNodes, palette);
     onChange?.(...buildCallbackArgs(newNodes));
+
+    // ── Slash-command action: run the callback instead of inserting a chip ──
+    if (trig.onSelect) {
+      editable.focus();
+      setCaretOffset(editable, mentionStart); // caret where the trigger text was
+      closeDropdown();
+      updatePlaceholder();
+      trig.onSelect(item, {
+        trigger: trig.trigger,
+        insertText: insertTextAtCaret,
+      });
+      return;
+    }
 
     // Locate chip by index, not by id — fixes duplicate-mention caret jump
     const chipDomNode = editable.childNodes[insertedAt] as
