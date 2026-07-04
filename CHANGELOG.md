@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-07-04
+
+### Docs
+
+- **New examples** for the v0.2.0 hovercard + theming features: [`examples/react/with-hovercards.tsx`](examples/react/with-hovercards.tsx) (`<RenderedMessage hovercard>`, copyable fields, light/dark `theme` toggle) and [`examples/vue/with-hovercards.vue`](examples/vue/with-hovercards.vue) (`renderCommentMessage` + `attachHovercards` with cleanup on unmount and theme change).
+- README examples table updated to list the new files.
+
+### Chore
+
+- **`release` / `release:dry` scripts** — `npm run release` (or `yarn release`) publishes to npm; both pin `--registry https://registry.npmjs.org` so they work through yarn too. `prepublishOnly` now also runs the test suite.
+
 ## [0.2.0] - 2026-07-04
 
 ### Added
@@ -62,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dual CJS + ESM builds with full `.d.ts` types
 - GitHub Pages demo site with live interactive examples
 
+[0.2.1]: https://github.com/amchuri/mention-kit/releases/tag/v0.2.1
 [0.2.0]: https://github.com/amchuri/mention-kit/releases/tag/v0.2.0
 [0.1.2]: https://github.com/amchuri/mention-kit/releases/tag/v0.1.2
 [0.1.1]: https://github.com/amchuri/mention-kit/releases/tag/v0.1.1

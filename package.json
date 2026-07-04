@@ -1,6 +1,6 @@
 {
   "name": "@cursortag/mention-kit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Headless zero-dependency TypeScript mention editor for React, Vue 3, and vanilla JS",
   "author": "Amay Churi",
   "license": "MIT",
@@ -73,7 +73,9 @@
     "test:coverage": "vitest run --coverage",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepublishOnly": "yarn build && yarn typecheck",
+    "prepublishOnly": "yarn build && yarn typecheck && yarn test",
+    "release": "npm publish --access public --registry https://registry.npmjs.org",
+    "release:dry": "npm publish --dry-run --access public --registry https://registry.npmjs.org",
     "prepare": "husky"
   },
   "lint-staged": {
