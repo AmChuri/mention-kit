@@ -559,6 +559,27 @@ Each trigger accepts:
 | `color`          | `string`                                       | palette             | Default chip color for this trigger       |
 | `label`          | `string`                                       | `"Mention someone"` | Dropdown header                           |
 | `renderItem`     | `(item, selected) => HTMLElement`              | —                   | Custom row renderer                       |
+| `onSelect`       | `(item, ctx) => void`                          | —                   | Slash-command mode (see below)            |
+
+### Slash commands (`onSelect`)
+
+Give a trigger an `onSelect` handler and selecting an item **runs the callback
+instead of inserting a chip** — the typed trigger text is removed first. Use
+`ctx.insertText(text)` to insert content at the caret. Perfect for `/` commands:
+
+```ts
+{
+  trigger: '/',
+  items: [
+    { id: 'assign', name: 'assign', meta: 'Assign to a teammate' },
+    { id: 'date',   name: 'date',   meta: 'Insert today' },
+  ],
+  onSelect: (item, ctx) => {
+    if (item.id === 'date') ctx.insertText(new Date().toISOString().slice(0, 10));
+    else openAssignDialog();          // any side effect
+  },
+}
+```
 
 Mentions remember their trigger, so they persist as `<trigger>{id}` (e.g.
 `#{t1}`) and round-trip. When re-rendering stored content that uses non-`@`
@@ -574,6 +595,52 @@ parsePersist(stored, people, [{ trigger: '#', items: tags }]);
 ```
 
 React & Vue `<MentionInput>` accept `triggers` as a prop.
+
+---
+
+## Controlled value
+
+Drive the editor from state with a `value` prop (a persisted `@{id}` string).
+Pair it with `onChange` + `serializeToPersist`. The editor only re-seeds when
+`value` differs from its current content, so typing keeps its caret.
+
+```tsx
+import { MentionInput, serializeToPersist } from '@cursortag/mention-kit/react';
+
+function Controlled() {
+  const [value, setValue] = useState('Hi @{u1}');
+  return (
+    <MentionInput
+      users={users}
+      value={value}
+      onChange={(_text, { nodes }) => setValue(serializeToPersist(nodes))}
+    />
+  );
+}
+```
+
+```vue
+<!-- Vue -->
+<MentionInput
+  :users="users"
+  :value="value"
+  @change="(_t, { nodes }) => (value = serializeToPersist(nodes))"
+/>
+```
+
+Works on the hook / composable too. Uncontrolled? Use `defaultValue` /
+`defaultNodes` instead.
+
+---
+
+## Accessibility
+
+The editor follows the ARIA combobox pattern. The editable exposes
+`role="textbox"`, `aria-multiline`, and `aria-autocomplete="list"`, and while the
+suggestion list is open it sets `aria-expanded`, `aria-controls` (the listbox
+id), and `aria-activedescendant` (the highlighted option id). The dropdown is a
+`role="listbox"` with `role="option"` rows. Keyboard: `↑↓` navigate, `Enter` /
+`Tab` select, `Escape` closes.
 
 ---
 
@@ -770,6 +837,12 @@ interface MentionTrigger {
   color?: string;
   label?: string;
   renderItem?: (item: MentionItem, selected: boolean) => HTMLElement;
+  onSelect?: (item: MentionItem, ctx: TriggerActionContext) => void; // slash-command mode
+}
+
+interface TriggerActionContext {
+  trigger: string; // the trigger char that fired
+  insertText: (text: string) => void; // insert text at the caret
 }
 
 // Item lists per trigger char, for parsing/rendering stored multi-trigger content

@@ -50,6 +50,12 @@ export function MultiTriggerDemo() {
             serverFiltered: true,
             debounce: 200,
             label: 'Run a command',
+            // Slash-command action: run instead of inserting a chip.
+            onSelect: (item, ctx) => {
+              if (item.id === 'c2')
+                ctx.insertText(new Date().toISOString().slice(0, 10) + ' ');
+              else ctx.insertText(`[${item.name}] `);
+            },
           },
         ]}
         onSubmit={(text) => {
@@ -60,8 +66,8 @@ export function MultiTriggerDemo() {
       />
 
       <p style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-        <kbd>@</kbd> people · <kbd>#</kbd> tags · <kbd>/</kbd> commands (async,
-        debounced) · <kbd>Enter</kbd> to submit
+        <kbd>@</kbd> people · <kbd>#</kbd> tags · <kbd>/</kbd> commands (async +
+        run an action) · <kbd>Enter</kbd> to submit
       </p>
 
       {output && (
