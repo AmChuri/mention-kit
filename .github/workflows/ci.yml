@@ -21,7 +21,7 @@ jobs:
       matrix:
         # Dev toolchain (happy-dom) needs Node >= 20; the published package
         # itself still supports Node >= 18 at runtime (browser library).
-        node: [20, 22]
+        node: [20, 22, 24]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
