@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-07-04
+
+### Added
+
+- **Creatable items** — a trigger can set `allowCreate: true` (and optionally `onCreate(query)` / `createLabel(query)`) to offer a "Create …" row when the typed query matches no existing item. Selecting it mints a new mention chip on the fly — e.g. create a brand-new `#tag`. `onCreate` builds the item (custom id/color); the default is `{ id: query, name: query }`.
+
+### Changed
+
+- **Label-style chips for non-`@` triggers** — chips are now trigger-aware. `@` mentions keep their round avatar (person), while `#`/`/`/`:` render as a label pill with a subtle trigger-char prefix (e.g. `# bug`) and no avatar — so tags read as tags, not people. Applies to the editor and to `renderCommentMessage` / `renderCommentMessageToHTML`. `@` output is unchanged.
+- 6 new tests (165 total).
+
+### Docs
+
+- **Demo areas now show a rendered preview after submit** — the React and Vue component demos and the multi-trigger demo render the submitted content as styled chips (via `RenderedMessage` / `renderCommentMessageToHTML`) alongside the stored `@{id}` string, so you can see exactly how a saved comment looks. The multi-trigger demo also lets you create new `#tags` and shows them resolved in the preview.
+
 ## [0.4.0] - 2026-07-04
 
 ### Added
@@ -94,6 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dual CJS + ESM builds with full `.d.ts` types
 - GitHub Pages demo site with live interactive examples
 
+[0.5.0]: https://github.com/amchuri/mention-kit/releases/tag/v0.5.0
 [0.4.0]: https://github.com/amchuri/mention-kit/releases/tag/v0.4.0
 [0.3.0]: https://github.com/amchuri/mention-kit/releases/tag/v0.3.0
 [0.2.1]: https://github.com/amchuri/mention-kit/releases/tag/v0.2.1

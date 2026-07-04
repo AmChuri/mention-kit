@@ -1,13 +1,15 @@
 import { useRef, useState } from 'react';
 import {
   MentionInput,
+  RenderedMessage,
+  serializeToPersist,
   type MentionEditorInstance,
 } from '@cursortag/mention-kit/react';
 import { USERS } from '../data';
 
 export function ReactComponentDemo() {
   const ref = useRef<MentionEditorInstance>(null);
-  const [output, setOutput] = useState('');
+  const [submitted, setSubmitted] = useState('');
 
   return (
     <div className="demo-live">
@@ -15,8 +17,8 @@ export function ReactComponentDemo() {
         ref={ref}
         users={USERS}
         placeholder="Write a comment… (type @ to mention)"
-        onSubmit={(text) => {
-          setOutput(text);
+        onSubmit={(_text, { nodes }) => {
+          setSubmitted(serializeToPersist(nodes));
           ref.current?.clear();
         }}
         className="demo-editor"
@@ -42,10 +44,17 @@ export function ReactComponentDemo() {
           Load draft
         </button>
       </div>
-      {output && (
+
+      {submitted && (
         <div className="demo-output">
-          <span className="output-label">submitted</span>
-          <code>{output}</code>
+          {/* How it renders in a comment thread */}
+          <span className="output-label">rendered</span>
+          <RenderedMessage message={submitted} users={USERS} />
+          {/* What you store */}
+          <span className="output-label" style={{ marginTop: 8 }}>
+            stored
+          </span>
+          <code>{submitted}</code>
         </div>
       )}
     </div>

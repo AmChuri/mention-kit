@@ -117,6 +117,19 @@ export interface MentionTrigger {
    * `ctx.insertText` to insert your own content.
    */
   onSelect?: (item: MentionItem, ctx: TriggerActionContext) => void;
+  /**
+   * Offer a "Create …" row when the query matches no existing item, letting the
+   * user mint a new one on the fly (e.g. a new `#tag`). Implied when `onCreate`
+   * is set.
+   */
+  allowCreate?: boolean;
+  /**
+   * Build the item created from a "Create …" row. Defaults to
+   * `{ id: query, name: query }`. Return your own id / color / etc. here.
+   */
+  onCreate?: (query: string) => MentionItem;
+  /** Label for the "Create …" row. Default: `Create "<query>"`. */
+  createLabel?: (query: string) => string;
 }
 
 export type TextNode = { type: 'text'; text: string };
@@ -447,14 +460,25 @@ export const renderCommentMessageToHTML = (
       const safeName = escapeHTML(name);
       const triggerAttr =
         ch !== '@' ? ` data-mention-trigger="${escapeHTML(ch)}"` : '';
-      const av = escapeHTML(
-        name
-          .split(' ')
-          .map((p) => p[0])
-          .join('')
-          .slice(0, 2)
-          .toUpperCase(),
-      );
+      // Leading element: avatar circle for @ people, trigger-char prefix for labels.
+      const leading =
+        ch === '@'
+          ? [
+              `<span aria-hidden="true" style="width:16px;height:16px;border-radius:50%;`,
+              `background:${color};color:#fff;display:inline-flex;align-items:center;`,
+              `justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;`,
+              `user-select:none;pointer-events:none">`,
+              escapeHTML(
+                name
+                  .split(' ')
+                  .map((p) => p[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase(),
+              ),
+              `</span>`,
+            ].join('')
+          : `<span aria-hidden="true" style="font-weight:700;opacity:0.65;flex-shrink:0;user-select:none;pointer-events:none">${escapeHTML(ch)}</span>`;
       return [
         `<span class="mk-chip" data-mention-id="${escapeHTML(id)}"${triggerAttr} `,
         `style="display:inline-flex;align-items:center;gap:4px;`,
@@ -462,10 +486,7 @@ export const renderCommentMessageToHTML = (
         `background:var(--mk-chip-bg,${color}18);`,
         `border-radius:var(--mk-chip-radius,5px);padding:1px 6px;font-weight:600;`,
         `white-space:nowrap;font-size:0.92em;vertical-align:middle">`,
-        `<span aria-hidden="true" style="width:16px;height:16px;border-radius:50%;`,
-        `background:${color};color:#fff;display:inline-flex;align-items:center;`,
-        `justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;`,
-        `user-select:none;pointer-events:none">${av}</span>`,
+        leading,
         `${safeName}</span>`,
       ].join('');
     })
@@ -496,6 +517,61 @@ const isChip = (node: Node | null): node is HTMLElement =>
   !!node && (node as HTMLElement).hasAttribute?.(A_ID);
 
 // ─── Chip builder ─────────────────────────────────────────────────────────────
+
+/**
+ * Builds the leading element of a chip: a round avatar for `@` people, or a
+ * subtle trigger-char prefix (e.g. `#`) for label-style triggers.
+ * @internal
+ */
+const chipLeading = (
+  color: string,
+  userName: string,
+  trigger: string,
+  avatar?: string,
+): HTMLElement => {
+  const el = document.createElement('span');
+  el.setAttribute('aria-hidden', 'true');
+  if (trigger === '@') {
+    el.style.cssText = [
+      'width:16px',
+      'height:16px',
+      'border-radius:50%',
+      `background:${color}`,
+      'color:#fff',
+      'display:inline-flex',
+      'align-items:center',
+      'justify-content:center',
+      'font-size:9px',
+      'font-weight:700',
+      'flex-shrink:0',
+      'user-select:none',
+      'pointer-events:none',
+      '-webkit-user-select:none',
+    ].join(';');
+    if (avatar) {
+      const img = document.createElement('img');
+      img.src = avatar;
+      img.alt = '';
+      img.style.cssText =
+        'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+      el.appendChild(img);
+    } else {
+      el.textContent = initials(userName);
+    }
+  } else {
+    // Label style: show the trigger char (e.g. "#") instead of an avatar.
+    el.textContent = trigger;
+    el.style.cssText = [
+      'font-weight:700',
+      'opacity:0.65',
+      'flex-shrink:0',
+      'user-select:none',
+      'pointer-events:none',
+      '-webkit-user-select:none',
+    ].join(';');
+  }
+  return el;
+};
 
 const buildChip = (
   user: MentionUser,
@@ -529,37 +605,7 @@ const buildChip = (
     'font-size:0.92em',
   ].join(';');
 
-  const av = document.createElement('span');
-  av.setAttribute('aria-hidden', 'true');
-  av.style.cssText = [
-    'width:16px',
-    'height:16px',
-    'border-radius:50%',
-    `background:${c}`,
-    'color:#fff',
-    'display:inline-flex',
-    'align-items:center',
-    'justify-content:center',
-    'font-size:9px',
-    'font-weight:700',
-    'flex-shrink:0',
-    'user-select:none',
-    'pointer-events:none',
-    '-webkit-user-select:none',
-  ].join(';');
-
-  if (user.avatar) {
-    const img = document.createElement('img');
-    img.src = user.avatar;
-    img.alt = '';
-    img.style.cssText =
-      'width:100%;height:100%;border-radius:50%;object-fit:cover;';
-    av.appendChild(img);
-  } else {
-    av.textContent = initials(user.name);
-  }
-
-  chip.appendChild(av);
+  chip.appendChild(chipLeading(c, user.name, trigger, user.avatar));
   chip.appendChild(document.createComment('')); // selection boundary
   chip.appendChild(document.createTextNode(displayName));
   return chip;
@@ -574,28 +620,10 @@ const rebuildChipInner = (
     chip.getAttribute(A_COLOR) ??
     deriveColor(chip.getAttribute(A_ID) ?? '', palette);
   const userName = chip.getAttribute(A_NAME) ?? '';
+  const trigger = chip.getAttribute(A_TRIGGER) ?? '@';
   chip.setAttribute(A_DISPLAY, displayName);
   chip.innerHTML = '';
-  const av = document.createElement('span');
-  av.setAttribute('aria-hidden', 'true');
-  av.style.cssText = [
-    'width:16px',
-    'height:16px',
-    'border-radius:50%',
-    `background:${color}`,
-    'color:#fff',
-    'display:inline-flex',
-    'align-items:center',
-    'justify-content:center',
-    'font-size:9px',
-    'font-weight:700',
-    'flex-shrink:0',
-    'user-select:none',
-    'pointer-events:none',
-    '-webkit-user-select:none',
-  ].join(';');
-  av.textContent = initials(userName);
-  chip.appendChild(av);
+  chip.appendChild(chipLeading(color, userName, trigger));
   chip.appendChild(document.createComment(''));
   chip.appendChild(document.createTextNode(displayName));
 };
@@ -1013,6 +1041,9 @@ interface ResolvedTrigger {
   onSelect:
     | ((item: MentionItem, ctx: TriggerActionContext) => void)
     | undefined;
+  allowCreate: boolean;
+  onCreate: ((query: string) => MentionItem) | undefined;
+  createLabel: (query: string) => string;
 }
 
 interface DropdownState {
@@ -1026,6 +1057,9 @@ interface DropdownState {
   ) => void;
   destroy: () => void;
 }
+
+/** @internal Marks a synthetic "Create …" dropdown row; holds the raw query. */
+const CREATE_MARK = '__mkCreate';
 
 let dropdownSeq = 0;
 
@@ -1071,6 +1105,40 @@ const createDropdown = (
     active: boolean,
     trig: ResolvedTrigger,
   ): HTMLElement => {
+    // "Create …" row — distinct from a normal suggestion.
+    const createQ = user[CREATE_MARK];
+    if (typeof createQ === 'string') {
+      const c = trig.color ?? '#2563eb';
+      const row = document.createElement('div');
+      row.setAttribute('role', 'option');
+      row.setAttribute('aria-selected', String(active));
+      row.style.cssText = [
+        'display:flex',
+        'align-items:center',
+        'gap:10px',
+        'padding:7px 12px',
+        'cursor:pointer',
+        `background:${active ? `${c}14` : 'transparent'}`,
+        'transition:background 0.12s',
+      ].join(';');
+      const badge = document.createElement('span');
+      badge.setAttribute('aria-hidden', 'true');
+      badge.textContent = '+';
+      badge.style.cssText =
+        `width:32px;height:32px;border-radius:50%;background:${c};color:#fff;` +
+        `display:flex;align-items:center;justify-content:center;font-size:18px;` +
+        `font-weight:700;flex-shrink:0;`;
+      const label = document.createElement('div');
+      label.style.cssText =
+        'font-size:14px;font-weight:500;color:var(--mk-card-text,#1e293b);';
+      label.textContent = trig.createLabel(createQ);
+      row.append(badge, label);
+      row.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        onSelect(user);
+      });
+      return row;
+    }
     if (trig.renderItem) return trig.renderItem(user, active);
     const c = user.color ?? trig.color ?? '#1976d2';
     const item = document.createElement('div');
@@ -1225,6 +1293,9 @@ export const createMentionEditor = (
       (t.trigger === '@' ? 'Mention someone' : `Insert ${t.trigger}`),
     renderItem: t.renderItem,
     onSelect: t.onSelect,
+    allowCreate: t.allowCreate ?? !!t.onCreate,
+    onCreate: t.onCreate,
+    createLabel: t.createLabel ?? ((q) => `Create “${q}”`),
   });
 
   // Legacy: `users` + optional `renderUser` become the default `@` trigger.
@@ -1379,11 +1450,22 @@ export const createMentionEditor = (
     const raw = trig.items(query);
     const isPromise =
       !!raw && typeof (raw as PromiseLike<MentionItem[]>).then === 'function';
-    const finalize = (list: MentionItem[]): MentionItem[] =>
-      (trig.serverFiltered
+    const finalize = (list: MentionItem[]): MentionItem[] => {
+      const filtered = trig.serverFiltered
         ? list
-        : list.filter((it) => trig.filter(it, query))
-      ).slice(0, trig.maxSuggestions);
+        : list.filter((it) => trig.filter(it, query));
+      const out = filtered.slice(0, trig.maxSuggestions);
+      const q = query.trim();
+      // Offer a "Create …" row when nothing matches the query exactly.
+      if (
+        trig.allowCreate &&
+        q !== '' &&
+        !filtered.some((it) => it.name.toLowerCase() === q.toLowerCase())
+      ) {
+        out.push({ id: '', name: q, [CREATE_MARK]: q });
+      }
+      return out;
+    };
 
     if (isPromise) {
       const seq = ++reqSeq;
@@ -1476,9 +1558,15 @@ export const createMentionEditor = (
     updatePlaceholder();
   };
 
-  const selectItem = (item: MentionItem): void => {
+  const selectItem = (selected: MentionItem): void => {
     const trig = activeTrigger;
     if (!trig) return;
+    // "Create …" row → mint the real item (onCreate, or default {id,name}).
+    const createQ = selected[CREATE_MARK];
+    const item: MentionItem =
+      typeof createQ === 'string'
+        ? (trig.onCreate?.(createQ) ?? { id: createQ, name: createQ })
+        : selected;
     const nodes = domToNodes(editable, palette);
     const endOffset = mentionStart + 1 + (mentionQuery?.length ?? 0);
     // Apply the trigger's default color when the item has none of its own.

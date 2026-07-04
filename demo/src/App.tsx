@@ -204,8 +204,8 @@ export function App() {
             id="multi-trigger"
             badge="React"
             badgeColor="blue"
-            title="Multiple triggers + async"
-            description="One editor handling @ people, # tags, and / commands. The command trigger fetches suggestions asynchronously (debounced, with a loading state). Each trigger has its own data, colors, and label."
+            title="Multiple triggers + async + create"
+            description="One editor handling @ people, # tags, and / commands. Type a new # tag and pick “Create …” to mint it. The / command fetches asynchronously (debounced) and runs an action. Submit to see it rendered as chips below."
             demo={<MultiTriggerDemo />}
             snippet={MULTI_TRIGGER_SNIPPET}
           />

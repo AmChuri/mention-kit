@@ -1,6 +1,9 @@
 import { defineComponent, h, ref } from 'vue';
 import {
   MentionInput,
+  renderCommentMessageToHTML,
+  serializeToPersist,
+  type EditorCallbackMeta,
   type MentionEditorInstance,
 } from '@cursortag/mention-kit/vue';
 import { USERS } from '../data';
@@ -9,10 +12,10 @@ export const VueComponentApp = defineComponent({
   name: 'VueComponentApp',
   setup() {
     const editorRef = ref<MentionEditorInstance | null>(null);
-    const output = ref('');
+    const submitted = ref('');
 
-    const onSubmit = (text: string) => {
-      output.value = text;
+    const onSubmit = (_text: string, meta: EditorCallbackMeta) => {
+      submitted.value = serializeToPersist(meta.nodes);
       editorRef.value?.clear();
     };
 
@@ -41,10 +44,19 @@ export const VueComponentApp = defineComponent({
           ),
           h('button', { class: 'btn-ghost', onClick: loadDraft }, 'Load draft'),
         ]),
-        output.value
+        submitted.value
           ? h('div', { class: 'demo-output' }, [
-              h('span', { class: 'output-label' }, 'submitted'),
-              h('code', output.value),
+              h('span', { class: 'output-label' }, 'rendered'),
+              // renderCommentMessageToHTML escapes text — safe to set as innerHTML.
+              h('div', {
+                innerHTML: renderCommentMessageToHTML(submitted.value, USERS),
+              }),
+              h(
+                'span',
+                { class: 'output-label', style: 'margin-top:8px' },
+                'stored',
+              ),
+              h('code', submitted.value),
             ])
           : null,
       ]);

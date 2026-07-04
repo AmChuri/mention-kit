@@ -275,6 +275,81 @@ describe('combobox a11y', () => {
   });
 });
 
+// ─── Creatable items ────────────────────────────────────────────────────────────
+
+describe('creatable items', () => {
+  it('offers a Create row for an unmatched query and inserts a new chip', () => {
+    const { editor, editable } = createEditor([
+      { trigger: '#', items: TAGS, allowCreate: true },
+    ]);
+    type(editable, '#urgent'); // not in TAGS (bug, feature)
+    expect(listbox()!.textContent).toContain('Create');
+
+    fireKeydown(editable, 'Enter'); // selects the Create row
+    const mention = editor.getNodes().find((n) => n.type === 'mention');
+    expect(mention).toMatchObject({ trigger: '#', displayName: 'urgent' });
+    expect(serializeToPersist(editor.getNodes())).toContain('#{urgent}');
+    editor.destroy();
+  });
+
+  it('uses onCreate to build the new item (custom id)', () => {
+    const { editor, editable } = createEditor([
+      {
+        trigger: '#',
+        items: TAGS,
+        onCreate: (q) => ({ id: `t-${q}`, name: q }),
+      },
+    ]);
+    type(editable, '#urgent');
+    fireKeydown(editable, 'Enter');
+    expect(serializeToPersist(editor.getNodes())).toContain('#{t-urgent}');
+    editor.destroy();
+  });
+
+  it('does not offer Create when an exact match already exists', () => {
+    const { editor, editable } = createEditor([
+      { trigger: '#', items: TAGS, allowCreate: true },
+    ]);
+    type(editable, '#bug'); // exact match
+    expect(listbox()!.textContent).not.toContain('Create');
+    expect(options()).toHaveLength(1);
+    editor.destroy();
+  });
+});
+
+// ─── Label styling (trigger-aware chips) ────────────────────────────────────────
+
+describe('label styling', () => {
+  it('renders non-@ chips as label pills (trigger prefix, no avatar)', () => {
+    const { editor, editable } = createEditor([{ trigger: '#', items: TAGS }]);
+    type(editable, '#');
+    fireKeydown(editable, 'Enter'); // inserts "bug"
+    const chip = editable.querySelector('[data-mention-id]') as HTMLElement;
+    const leading = chip.querySelector('[aria-hidden="true"]') as HTMLElement;
+    expect(leading.textContent).toBe('#'); // trigger prefix, not initials
+    expect(chip.getAttribute('data-mention-trigger')).toBe('#');
+    editor.destroy();
+  });
+
+  it('keeps @ chips avatar-style (initials)', () => {
+    const { editor, editable } = createEditor([{ trigger: '@', items: USERS }]);
+    type(editable, '@');
+    fireKeydown(editable, 'Enter'); // Alice
+    const chip = editable.querySelector('[data-mention-id]') as HTMLElement;
+    const leading = chip.querySelector('[aria-hidden="true"]') as HTMLElement;
+    expect(leading.textContent).toBe('A'); // initials
+    editor.destroy();
+  });
+
+  it('renders label chips in HTML with a prefix and no avatar circle', () => {
+    const html = renderCommentMessageToHTML('a #{t1}', USERS, undefined, [
+      { trigger: '#', items: TAGS },
+    ]);
+    expect(html).toContain('>#</span>'); // trigger prefix
+    expect(html).not.toContain('border-radius:50%'); // no avatar circle
+  });
+});
+
 // ─── Persistence & render round-trips ───────────────────────────────────────────
 
 describe('multi-trigger persistence', () => {
