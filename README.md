@@ -33,6 +33,8 @@
 - **Headless** — renders a plain `<div>`, style with Tailwind / MUI / shadcn / anything
 - **Keyboard-first** — `@` to open, `↑↓` to navigate, `Enter`/`Tab` to select, `Escape` to close
 - **Simple callbacks** — `onSubmit` gives you `text` directly, plus `nodes` and `mentionedUsers` in `meta`
+- **Multiple triggers** — `@` people, `#` tags, `/` commands, `:` emoji — each with its own data, colors, and filter
+- **Async suggestions** — fetch results from a server as you type (debounced, with a loading state)
 - **Hover user-info cards** — hover a mention in a rendered comment to reveal the avatar, meta, and copyable fields
 - **Themeable** — `--mk-*` CSS variables (with light/dark presets) or a `theme` object; per-user colors or a shared palette
 - **Persistence format** — `@{userId}` tokens for easy storage and re-render
@@ -512,6 +514,69 @@ const users = [{ id: 'u1', name: 'Alice', color: '#7c3aed' }];
 
 ---
 
+## Multiple triggers, async & custom filter
+
+By default the editor uses a single `@` trigger backed by `users`. Pass
+`triggers` to handle several — `@` people, `#` tags, `/` commands, `:` emoji —
+each with its own data source, colors, and matching. `triggers` fully replaces
+the `users` shorthand.
+
+```ts
+createMentionEditor({
+  container,
+  get users() {
+    return [];
+  }, // ignored when `triggers` is set
+  triggers: [
+    { trigger: '@', items: people, color: '#7c3aed' },
+    { trigger: '#', items: tags, color: '#0891b2', label: 'Add a tag' },
+    {
+      // Async search — items is a function returning a Promise.
+      trigger: '/',
+      debounce: 200, // wait 200ms after typing stops
+      serverFiltered: true, // results are already filtered server-side
+      items: async (query) => {
+        const res = await fetch(`/api/commands?q=${query}`);
+        return res.json(); // MentionItem[]  ({ id, name, ... })
+      },
+    },
+  ],
+});
+```
+
+Each trigger accepts:
+
+| Field            | Type                                           | Default             | Description                               |
+| ---------------- | ---------------------------------------------- | ------------------- | ----------------------------------------- |
+| `trigger`        | `string`                                       | —                   | Single trigger char (`@`, `#`, `/`, `:`)  |
+| `items`          | `MentionItem[] \| (query) => Items \| Promise` | —                   | Static list or a (async) search function  |
+| `filter`         | `(item, query) => boolean`                     | `name.includes`     | Custom matcher                            |
+| `serverFiltered` | `boolean`                                      | `false`             | Skip local filtering (source pre-filters) |
+| `debounce`       | `number`                                       | `0`                 | ms to debounce async `items()`            |
+| `minChars`       | `number`                                       | `0`                 | Min query length before opening           |
+| `allowSpaces`    | `boolean`                                      | `false`             | Allow spaces inside the query             |
+| `maxSuggestions` | `number`                                       | top-level           | Max rows shown                            |
+| `color`          | `string`                                       | palette             | Default chip color for this trigger       |
+| `label`          | `string`                                       | `"Mention someone"` | Dropdown header                           |
+| `renderItem`     | `(item, selected) => HTMLElement`              | —                   | Custom row renderer                       |
+
+Mentions remember their trigger, so they persist as `<trigger>{id}` (e.g.
+`#{t1}`) and round-trip. When re-rendering stored content that uses non-`@`
+triggers, pass `triggerItems` so ids resolve to names:
+
+```ts
+// vanilla / Vue
+renderCommentMessage(stored, people, palette, [{ trigger: '#', items: tags }]);
+parsePersist(stored, people, [{ trigger: '#', items: tags }]);
+
+// React
+<RenderedMessage message={stored} users={people} triggerItems={[{ trigger: '#', items: tags }]} />
+```
+
+React & Vue `<MentionInput>` accept `triggers` as a prop.
+
+---
+
 ## Hover user-info cards
 
 Reveal a rich profile card when a reader hovers a mention in a **rendered
@@ -655,17 +720,18 @@ container yourself.
 
 ### Core (`@cursortag/mention-kit`)
 
-| Export                                             | Description                                                        |
-| -------------------------------------------------- | ------------------------------------------------------------------ |
-| `createMentionEditor(opts)`                        | Creates a vanilla editor instance                                  |
-| `serializeToText(nodes)`                           | Nodes to plain text string                                         |
-| `serializeToMarkdown(nodes)`                       | Nodes to `@[name](id)` markdown string                             |
-| `renderCommentMessage(msg, users, palette?)`       | Stored string to `(string \| HTMLElement)[]`                       |
-| `renderCommentMessageToHTML(msg, users, palette?)` | Stored string to HTML string                                       |
-| `attachHovercards(root, users, opts?)`             | Wire hover user-info cards onto rendered mentions; returns cleanup |
-| `resolveThemeVars(theme)`                          | Theme object to `{ '--mk-*': value }` map                          |
-| `applyTheme(el, theme)`                            | Write theme vars onto an element                                   |
-| `DEFAULT_MENTION_PALETTE`                          | Built-in color array                                               |
+| Export                                                            | Description                                                        |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `createMentionEditor(opts)`                                       | Creates a vanilla editor instance                                  |
+| `serializeToText(nodes)`                                          | Nodes to plain text string                                         |
+| `serializeToMarkdown(nodes)`                                      | Nodes to `@[name](id)` markdown string                             |
+| `renderCommentMessage(msg, users, palette?, triggerItems?)`       | Stored string to `(string \| HTMLElement)[]`                       |
+| `renderCommentMessageToHTML(msg, users, palette?, triggerItems?)` | Stored string to HTML string                                       |
+| `parsePersist(raw, users, triggerItems?)`                         | Stored string to `EditorNode[]`                                    |
+| `attachHovercards(root, users, opts?)`                            | Wire hover user-info cards onto rendered mentions; returns cleanup |
+| `resolveThemeVars(theme)`                                         | Theme object to `{ '--mk-*': value }` map                          |
+| `applyTheme(el, theme)`                                           | Write theme vars onto an element                                   |
+| `DEFAULT_MENTION_PALETTE`                                         | Built-in color array                                               |
 
 ### Types
 
@@ -688,8 +754,37 @@ interface MentionUserDetail {
   href?: string; // renders value as a link (http(s)/mailto/tel)
 }
 
+type MentionItem = MentionUser; // items a trigger can suggest
+
+interface MentionTrigger {
+  trigger: string; // single char: '@', '#', '/', ':'
+  items:
+    | MentionItem[]
+    | ((query: string) => MentionItem[] | Promise<MentionItem[]>);
+  filter?: (item: MentionItem, query: string) => boolean;
+  serverFiltered?: boolean; // items() already filtered — skip local filter
+  debounce?: number; // ms, for async items() (default 0)
+  minChars?: number; // default 0
+  allowSpaces?: boolean; // default false
+  maxSuggestions?: number;
+  color?: string;
+  label?: string;
+  renderItem?: (item: MentionItem, selected: boolean) => HTMLElement;
+}
+
+// Item lists per trigger char, for parsing/rendering stored multi-trigger content
+interface TriggerItems {
+  trigger: string;
+  items: MentionItem[];
+}
+
 type TextNode = { type: 'text'; text: string };
-type MentionNode = { type: 'mention'; user: MentionUser; displayName: string };
+type MentionNode = {
+  type: 'mention';
+  user: MentionUser;
+  displayName: string;
+  trigger?: string; // absent means '@'
+};
 type EditorNode = TextNode | MentionNode;
 
 interface EditorCallbackMeta {
